@@ -1,33 +1,33 @@
 use std::fs;
+use std::io::Result;
+use std::path::PathBuf;
 
-use crate::file_hiding::file_management::file_log::{get_object, store_object};
-use crate::repo_hiding::branch_management::get_head;
-use crate::repo_hiding::data_type::{Commit, CommitMetadata, Hash};
+use crate::file_hiding::file_log::{retrieve_data, store_data};
+use crate::repo_hiding::application_data::{Commit, CommitMetadata, Hash};
+use crate::repo_hiding::branch_management::{get_head, update_head};
+
+use super::application_data::Tree;
 
 // create a new revision with the given metadata
-pub fn create_revision(metadata: &CommitMetadata) -> Hash {
+pub fn create_revision(metadata: CommitMetadata) -> Hash {
     // create a new commit object
     let commit_hash = read_cwd();
     let parent_hash = get_head();
-    let commit = Commit {
-        metadata: metadata.clone(),
-        hash: commit_hash,
-        parent: parent_hash,
-    };
+    let commit = Commit::new_commit(commit_hash.clone(), parent_hash, metadata);
 
     // store the commit object
-    let serialized = serde_json::to_string(&commit).unwrap();
-    store_object(&serialized);
+    let serialized = commit.serialize();
+    store_data("/geet/objects/", &serialized).unwrap();
 
     // update HEAD
-    update_head(commit_hash);
+    update_head(&commit_hash);
     commit_hash
 }
 
 // get the revision with the given hash
 pub fn get_revision(commit_hash: &String) -> Commit {
-    let serialized = get_object(&commit_hash).unwrap();
-    serde_json::from_str(&serialized).unwrap()
+    let serialized = retrieve_data(&format!("/geet/objects/{}", commit_hash)).unwrap();
+    Commit::deserialize(&serialized)
 }
 
 // get the parent that the revision is pointing to
@@ -47,30 +47,45 @@ pub fn checkout(commit_hash: &String) {
 }
 
 fn read_cwd() -> Hash {
-    todo!()
+    navigate_folders_recursively(&"./".to_string()).unwrap()
 }
 
 fn update_cwd(commit: &Commit) {}
 
 fn navigate_folders_recursively(path: &String) -> Result<String> {
     let children = fs::read_dir(path)?;
-    let mut tree_content = String::new();
+    let mut tree = Tree::new();
 
     for child in children {
         let path = child?.path();
-        let path_string = gitty::strip_path(&path);
+        let path_string = strip_path(&path);
 
         let hash = if path.is_dir() {
-            navigate_folders_recursively(path).unwrap()
+            navigate_folders_recursively(&path_string).unwrap()
         } else {
-            store_object(&path_string).unwrap()
+            store_file(&path_string)
         };
 
-        let content_type = if path.is_dir() { "tree" } else { "blob" };
         let file_name = path.file_name().unwrap().to_str().unwrap();
-        tree_content.push_str(&format!("{} {} {}\n", content_type, hash, file_name));
+        if path.is_dir() {
+            tree.add_dir_node(hash, file_name.to_string());
+        } else {
+            tree.add_file_node(hash, file_name.to_string());
+        }
     }
 
-    let hash = store_object(&tree_content).unwrap();
+    let serialized = tree.serialize();
+    let hash = store_data("/geet/objects/", &serialized).unwrap();
     Ok(hash)
+}
+
+fn store_file(path: &String) -> Hash {
+    let data = fs::read_to_string(path).unwrap();
+    store_data(&path, &data).unwrap()
+}
+
+fn strip_path(path: &PathBuf) -> String {
+    path.to_str()
+        .map(|s| s.trim_start_matches("./").to_string())
+        .unwrap_or_default()
 }

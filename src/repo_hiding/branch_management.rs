@@ -1,4 +1,4 @@
-use crate::repo_hiding::data_type::*;
+use crate::repo_hiding::application_data::{Commit, Hash, Ref, RefType};
 
 // create a new ref with the given name
 // hash is optional. If it is None, the ref will point to HEAD
@@ -30,7 +30,7 @@ pub fn get_head() -> Option<Hash> {
 }
 
 // update the HEAD to point to the new hash
-pub fn update_head(new_hash: Hash) {
+pub fn update_head(new_hash: &Hash) {
     todo!()
 }
 

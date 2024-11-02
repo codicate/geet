@@ -2,7 +2,7 @@
 // define the structure of commits and other repository-related metadata.
 /*
 add the following [dependencies] to cargo.toml:
-[dependencies] 
+[dependencies]
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 */
@@ -11,45 +11,48 @@ use serde::{Deserialize, Serialize};
 use serde_json;
 use std::error::Error;
 
+pub type Hash = String;
+
+#[derive(PartialEq, Debug, Clone, Serialize, Deserialize)]
+pub struct CommitMetadata {
+    pub author: String,
+    pub message: String,
+    pub timestamp: i64,
+}
+
 /* This is a commit in the DVCS. */
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Commit {
-    pub id: String,              // Commit hash (e.g., SHA-1)
-    pub message: String,         // Commit message
-    pub author: String,          // Author's name
-    pub date: String,            // Timestamp
-    pub parent: Option<String>,  // Hash of the parent commit
+    pub id: Hash,                 // Commit hash (e.g., SHA-1)
+    pub parent: Option<Hash>,     // Hash of the parent commit
+    pub metadata: CommitMetadata, // Commit metadata (author, message, timestamp)
 }
 
 impl Commit {
     /* creates a new `Commit` instance with the specified fields. */
-    pub fn new_commit(id: String, message: String, author: String, date: String, parent: Option<String>) -> Self {
+    pub fn new_commit(id: Hash, parent: Option<Hash>, metadata: CommitMetadata) -> Self {
         Commit {
             id,
-            message,
-            author,
-            date,
             parent,
+            metadata,
         }
     }
 
-    /* serializes a `Commit` instance to a JSON byte vector. */
-    pub fn serialize(&self) -> Result<Vec<u8>, SerializationError> {
-        serde_json::to_vec(self).map_err(|e| SerializationError::SerdeError(e.to_string()))
+    // TODO (Optional): change it back to serialize to vectcor
+    pub fn serialize(&self) -> String {
+        serde_json::to_string(self).unwrap()
     }
 
-    /* deserializes a `Commit` instance from a JSON byte slice. */
-    pub fn deserialize(data: &[u8]) -> Result<Self, SerializationError> {
-        serde_json::from_slice(data).map_err(|e| SerializationError::SerdeError(e.to_string()))
+    pub fn deserialize(data: &str) -> Self {
+        serde_json::from_str(data).unwrap()
     }
 }
-
 
 /*  represents a branch or tag reference (not needed in minimal prototype). */
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Ref {
-    pub name: String,       // Branch or tag name
-    pub commit_id: String,  // Associated commit hash
+    pub name: String,      // Branch or tag name
+    pub commit_id: String, // Associated commit hash
 }
 
 impl Ref {
@@ -66,11 +69,18 @@ impl Ref {
     }
 }
 
+#[derive(PartialEq, Debug, Clone, Serialize, Deserialize)]
+pub enum RefType {
+    Branch,
+    Tag,
+    Head,
+}
+
 /* stores repository metadata (not needed in minimal prototype). */
 #[derive(Serialize, Deserialize, Debug)]
 pub struct RepositoryConfig {
-    pub repo_name: String,       // Repo name
-    pub default_branch: String,  // default branch name
+    pub repo_name: String,      // Repo name
+    pub default_branch: String, // default branch name
 }
 
 impl RepositoryConfig {
@@ -110,3 +120,55 @@ Test Cases for Commit Serialization/Deserialization:
 3. Ensure data consistency after serialization and deserialization.
 */
 
+/* Enum to define the type of content in the `TreeNode`. */
+#[derive(Serialize, Deserialize, Debug)]
+pub enum ContentType {
+    File,
+    Dir,
+}
+#[derive(Serialize, Deserialize, Debug)]
+pub struct TreeNode {
+    pub content_type: ContentType, // Indicates if it's a blob or a tree
+    pub hash: Hash,                // Hash of the node
+    pub name: String,              // Name of the node
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct Tree {
+    pub nodes: Vec<TreeNode>, // List of nodes in the tree
+}
+
+impl Tree {
+    /* Creates a new, empty `Tree` instance. */
+    pub fn new() -> Self {
+        Tree { nodes: Vec::new() }
+    }
+
+    /* Adds a directory node (Tree) to the `Tree`. */
+    pub fn add_dir_node(&mut self, hash: Hash, name: String) {
+        let node = TreeNode {
+            content_type: ContentType::Dir,
+            hash,
+            name,
+        };
+        self.nodes.push(node);
+    }
+
+    /* Adds a file node (Blob) to the `Tree`. */
+    pub fn add_file_node(&mut self, hash: Hash, name: String) {
+        let node = TreeNode {
+            content_type: ContentType::File,
+            hash,
+            name,
+        };
+        self.nodes.push(node);
+    }
+
+    pub fn serialize(&self) -> String {
+        serde_json::to_string(self).unwrap()
+    }
+
+    pub fn deserialize(data: &str) -> Self {
+        serde_json::from_str(data).unwrap()
+    }
+}
