@@ -26,13 +26,11 @@ pub fn delete_ref(name: String) {}
 
 // get the hash that the HEAD is pointing to
 pub fn get_head() -> Option<Hash> {
-    todo!()
+    None
 }
 
 // update the HEAD to point to the new hash
-pub fn update_head(new_hash: &Hash) {
-    todo!()
-}
+pub fn update_head(new_hash: &Hash) {}
 
 // checkout the given ref by calling update_head() and apply_revision()
 pub fn checkout(ref_name: String) {

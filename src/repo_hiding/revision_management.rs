@@ -17,7 +17,7 @@ pub fn create_revision(metadata: CommitMetadata) -> Hash {
 
     // store the commit object
     let serialized = commit.serialize();
-    store_data("/geet/objects/", &serialized).unwrap();
+    store_data("./geet/objects/", &serialized).unwrap();
 
     // update HEAD
     update_head(&commit_hash);
@@ -26,7 +26,7 @@ pub fn create_revision(metadata: CommitMetadata) -> Hash {
 
 // get the revision with the given hash
 pub fn get_revision(commit_hash: &String) -> Commit {
-    let serialized = retrieve_data(&format!("/geet/objects/{}", commit_hash)).unwrap();
+    let serialized = retrieve_data(&format!("./geet/objects/{}", commit_hash)).unwrap();
     Commit::deserialize(&serialized)
 }
 
@@ -47,12 +47,13 @@ pub fn checkout(commit_hash: &String) {
 }
 
 fn read_cwd() -> Hash {
-    navigate_folders_recursively(&"./".to_string()).unwrap()
+    navigate_folders_recursively(&"./test".to_string()).unwrap()
 }
 
 fn update_cwd(commit: &Commit) {}
 
 fn navigate_folders_recursively(path: &String) -> Result<String> {
+    println!("Navigating folder: {}", path);
     let children = fs::read_dir(path)?;
     let mut tree = Tree::new();
 
@@ -75,13 +76,14 @@ fn navigate_folders_recursively(path: &String) -> Result<String> {
     }
 
     let serialized = tree.serialize();
-    let hash = store_data("/geet/objects/", &serialized).unwrap();
+    let hash = store_data("./geet/objects/", &serialized).unwrap();
     Ok(hash)
 }
 
 fn store_file(path: &String) -> Hash {
+    println!("Storing file: {}", path);
     let data = fs::read_to_string(path).unwrap();
-    store_data(&path, &data).unwrap()
+    store_data("./geet/objects/", &data).unwrap()
 }
 
 fn strip_path(path: &PathBuf) -> String {
