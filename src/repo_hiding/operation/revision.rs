@@ -2,11 +2,9 @@ use std::fs;
 use std::io::Result;
 use std::path::PathBuf;
 
+use super::super::application_data::{Commit, CommitMetadata, Hash, Tree};
+use super::branch::{get_head, update_head};
 use crate::file_hiding::file_log::{retrieve_object, store_object};
-use crate::repo_hiding::application_data::{Commit, CommitMetadata, Hash};
-use crate::repo_hiding::branch_management::{get_head, update_head};
-
-use super::application_data::Tree;
 
 // create a new revision with the given metadata
 pub fn create_revision(metadata: CommitMetadata) -> Hash {

@@ -11,22 +11,14 @@ use crate::repo_hiding::application_data::SerializationError;
 use serde::{Deserialize, Serialize};
 use sha1::{Digest, Sha1};
 use std::fs::{self, File};
-use std::io::{self, Read, Write};
+use std::io::{self, Read, Result, Write};
+use std::path::Path;
 
-/*
-stores file data at a specified path,
-generates an SHA-1 hash for the content,
-and saves it to a hash-named file or directory.
-*/
-/*
-stores file data at a specified path,
-generates an SHA-1 hash for the content,
-and saves it to a hash-named file or directory.
-*/
-// update: input string
-pub fn store_data(path: &str, data: &str) -> Result<String, FileSystemError> {
-    // convert data to JSON format
-    let json_data = serde_json::to_string(data).unwrap();
+const BASE_PATH: &str = "./.geet/objects";
+
+pub fn store_object(data: &String) -> Result<String> {
+    // Convert data to JSON format
+    let json_data = serde_json::to_string(data)?;
 
     // Generate SHA-1 hash
     let mut hasher = Sha1::new();
@@ -34,11 +26,11 @@ pub fn store_data(path: &str, data: &str) -> Result<String, FileSystemError> {
     let hash = hasher.finalize();
     let hash_string = format!("{:x}", hash);
 
-    // directory structure based on the first two characters of the hash
-    let dir_path = format!("{}/{}", path, &hash_string[..2]);
+    // Directory structure based on the first two characters of the hash
+    let dir_path = format!("{}/{}", BASE_PATH, &hash_string[..2]);
     fs::create_dir_all(&dir_path)?;
 
-    // write data to a file named with its hash
+    // Write data to a file named with its hash
     let file_path = format!("{}/{}", dir_path, hash_string);
     let mut file = File::create(&file_path)?;
     file.write_all(json_data.as_bytes())?;
@@ -46,26 +38,43 @@ pub fn store_data(path: &str, data: &str) -> Result<String, FileSystemError> {
     Ok(hash_string)
 }
 
-//Reads and returns data as a JSON string from a specified file path.
-pub fn retrieve_data(path: &str) -> Result<String, FileSystemError> {
-    // read data from the file
-    let mut file = File::open(path)?;
+pub fn retrieve_object(hash: &String) -> Result<String> {
+    // Ensure the hash is at least two characters long
+    if hash.len() < 2 {
+        return Err(io::Error::new(
+            io::ErrorKind::Other,
+            "Invalid hash provided",
+        ));
+    }
+
+    // Directory structure based on the first two characters of the hash
+    let dir_path = format!("{}/{}", BASE_PATH, &hash[..2]);
+    let file_path = format!("{}/{}", dir_path, hash);
+
+    // Check if the file exists
+    if !Path::new(&file_path).exists() {
+        return Err(io::Error::new(io::ErrorKind::NotFound, "File not found"));
+    }
+
+    // Read data from the file
+    let mut file = File::open(&file_path)?;
     let mut data = String::new();
     file.read_to_string(&mut data)?;
 
-    // convert JSON string to data
-    let json_data: String = serde_json::from_str(&data).unwrap();
+    // Convert JSON string back to data
+    let json_data: String = serde_json::from_str(&data)?;
+
     Ok(json_data)
 }
 
 /* deletes a file at a specified path. */
-pub fn delete_data(path: &str) -> Result<(), FileSystemError> {
+pub fn delete_data(path: &str) -> Result<()> {
     // TODO: Implement file deletion functionality
     todo!()
 }
 
 /* lists all files within a directory, filtering for files only. */
-pub fn list_files(directory: &str) -> Result<Vec<String>, FileSystemError> {
+pub fn list_files(directory: &str) -> Result<Vec<String>> {
     // TODO: Implement directory file listing functionality
     todo!()
 }
@@ -73,7 +82,7 @@ pub fn list_files(directory: &str) -> Result<Vec<String>, FileSystemError> {
 /*
 serializes metadata for additional information about file versions.
 */
-pub fn serialize_metadata<T: Serialize>(metadata: &T) -> Result<Vec<u8>, SerializationError> {
+pub fn serialize_metadata<T: Serialize>(metadata: &T) -> Result<Vec<u8>> {
     // TODO: Implement metadata serialization functionality
     todo!()
 }
@@ -81,7 +90,7 @@ pub fn serialize_metadata<T: Serialize>(metadata: &T) -> Result<Vec<u8>, Seriali
 /*
 deserializes metadata for additional information about file versions.
 */
-pub fn deserialize_metadata<T: DeserializeOwned>(data: &[u8]) -> Result<T, DeserializationError> {
+pub fn deserialize_metadata<T: DeserializeOwned>(data: &[u8]) -> Result<T> {
     // TODO: Implement metadata deserialization functionality
     todo!()
 }
@@ -90,23 +99,11 @@ pub fn deserialize_metadata<T: DeserializeOwned>(data: &[u8]) -> Result<T, Deser
 trait DeserializeOwned: for<'de> Deserialize<'de> {}
 type DeserializationError = SerializationError;
 
-#[derive(Debug)]
-pub enum FileSystemError {
-    IoError(io::Error),
-    SerializationError(bincode::Error),
-}
+// 4 new methods
+// Stores a serializable object and returns its SHA-1 hash.
+// create store_object retrieve_object to settle the path once for all, so the store_data and retrieve data would be simpler instead of calling path
 
-impl From<io::Error> for FileSystemError {
-    fn from(error: io::Error) -> Self {
-        FileSystemError::IoError(error)
-    }
-}
-
-impl From<bincode::Error> for FileSystemError {
-    fn from(error: bincode::Error) -> Self {
-        FileSystemError::SerializationError(error)
-    }
-}
+// redesign retrieve_data to use the first two characters of the hash from the store data instead of the path.
 
 /*
 Test cases:

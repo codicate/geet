@@ -9,5 +9,5 @@ fn main() {
         timestamp: 0,
     };
 
-    repo_hiding::revision_management::create_revision(metadata);
+    repo_hiding::operation::revision::create_revision(metadata);
 }

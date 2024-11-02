@@ -97,22 +97,6 @@ impl RepositoryConfig {
     }
 }
 
-/* errors related to serialization and deserialization. */
-#[derive(Debug)]
-pub enum SerializationError {
-    SerdeError(String),
-}
-
-impl std::fmt::Display for SerializationError {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        match &self {
-            SerializationError::SerdeError(msg) => write!(f, "Serialization Error: {}", msg),
-        }
-    }
-}
-
-impl Error for SerializationError {}
-
 /*
 Test Cases for Commit Serialization/Deserialization:
 1. Create a new `Commit` instance and serialize it.
@@ -172,3 +156,25 @@ impl Tree {
         serde_json::from_str(data).unwrap()
     }
 }
+
+/// Custom serialization error type.
+#[derive(Debug)]
+pub enum SerializationError {
+    SerdeJsonError(serde_json::Error),
+    BincodeError(bincode::Error),
+    InvalidHashLength,
+    FileNotFound,
+}
+
+impl std::fmt::Display for SerializationError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match &self {
+            SerializationError::SerdeJsonError(msg) => write!(f, "Serde JSON Error: {}", msg),
+            SerializationError::BincodeError(msg) => write!(f, "Bincode Error: {}", msg),
+            SerializationError::InvalidHashLength => write!(f, "Invalid hash length provided."),
+            SerializationError::FileNotFound => write!(f, "File not found for the given hash."),
+        }
+    }
+}
+
+impl Error for SerializationError {}
