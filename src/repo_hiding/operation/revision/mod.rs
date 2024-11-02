@@ -7,13 +7,13 @@ use cwd::{read_cwd, update_cwd};
 // create a new revision with the given metadata
 pub fn create_revision(metadata: CommitMetadata) -> Hash {
     // create a new commit object
-    let commit_hash = read_cwd();
+    let tree_hash = read_cwd();
     let parent_hash = get_head();
-    let commit = Commit::new_commit(commit_hash.clone(), parent_hash, metadata);
+    let commit = Commit::new_commit(tree_hash, parent_hash, metadata);
 
     // store the commit object
     let serialized = commit.serialize();
-    store_object(&serialized).unwrap();
+    let commit_hash = store_object(&serialized).unwrap();
 
     // update HEAD
     update_head(&commit_hash);
