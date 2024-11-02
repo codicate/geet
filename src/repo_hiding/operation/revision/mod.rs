@@ -1,7 +1,7 @@
 mod cwd;
 // use super::branch::{get_head, update_head};
 use crate::file_hiding::file_log::{retrieve_object, store_object};
-use crate::file_hiding::ref_log::{get_ref, update_ref};
+use crate::file_hiding::ref_log::{create_ref, get_ref};
 use crate::repo_hiding::data_type::{Commit, CommitMetadata, Hash};
 use cwd::{read_cwd, update_cwd};
 
@@ -10,7 +10,7 @@ fn get_head() -> Option<Hash> {
 }
 
 fn update_head(new_hash: &Hash) {
-    update_ref("HEAD", &new_hash).unwrap();
+    create_ref("HEAD", &new_hash).unwrap();
 }
 
 // create a new revision with the given metadata
