@@ -11,7 +11,6 @@ pub fn read_cwd() -> Hash {
 }
 
 fn read_cwd_helper(path: &str) -> Result<String> {
-    println!("Navigating folder: {}", path);
     let children = fs::read_dir(path)?;
     let mut tree = Tree::new();
 
@@ -80,7 +79,6 @@ fn delete_cwd(path: &str) -> Result<()> {
 }
 
 fn store_file(path: &String) -> Hash {
-    println!("Storing file: {}", path);
     let data = fs::read_to_string(path).unwrap();
     store_object(&data).unwrap()
 }
