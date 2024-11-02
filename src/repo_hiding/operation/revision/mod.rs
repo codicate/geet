@@ -1,10 +1,8 @@
-use std::fs;
-use std::io::Result;
-use std::path::PathBuf;
-
-use super::super::application_data::{Commit, CommitMetadata, Hash, Tree};
+mod cwd;
 use super::branch::{get_head, update_head};
 use crate::file_hiding::file_log::{retrieve_object, store_object};
+use crate::repo_hiding::data_type::{Commit, CommitMetadata, Hash, Tree};
+use cwd::{read_cwd, update_cwd};
 
 // create a new revision with the given metadata
 pub fn create_revision(metadata: CommitMetadata) -> Hash {
@@ -42,50 +40,4 @@ pub fn get_parent_revision(commit_hash: &String) -> Option<Commit> {
 pub fn checkout(commit_hash: &String) {
     let commit = get_revision(commit_hash);
     update_cwd(&commit.id);
-}
-
-fn read_cwd() -> Hash {
-    navigate_folders_recursively(&"./test".to_string()).unwrap()
-}
-
-fn update_cwd(hash: &Hash) {}
-
-fn navigate_folders_recursively(path: &String) -> Result<String> {
-    println!("Navigating folder: {}", path);
-    let children = fs::read_dir(path)?;
-    let mut tree = Tree::new();
-
-    for child in children {
-        let path = child?.path();
-        let path_string = strip_path(&path);
-
-        let hash = if path.is_dir() {
-            navigate_folders_recursively(&path_string).unwrap()
-        } else {
-            store_file(&path_string)
-        };
-
-        let file_name = path.file_name().unwrap().to_str().unwrap();
-        if path.is_dir() {
-            tree.add_dir_node(hash, file_name.to_string());
-        } else {
-            tree.add_file_node(hash, file_name.to_string());
-        }
-    }
-
-    let serialized = tree.serialize();
-    let hash = store_object(&serialized).unwrap();
-    Ok(hash)
-}
-
-fn store_file(path: &String) -> Hash {
-    println!("Storing file: {}", path);
-    let data = fs::read_to_string(path).unwrap();
-    store_object(&data).unwrap()
-}
-
-fn strip_path(path: &PathBuf) -> String {
-    path.to_str()
-        .map(|s| s.trim_start_matches("./").to_string())
-        .unwrap_or_default()
 }

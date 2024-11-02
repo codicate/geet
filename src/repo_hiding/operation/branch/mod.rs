@@ -1,4 +1,4 @@
-use crate::repo_hiding::application_data::{Commit, Hash, Ref, RefType};
+use crate::repo_hiding::data_type::{Commit, Hash, Ref, RefType};
 
 // create a new ref with the given name
 // hash is optional. If it is None, the ref will point to HEAD

@@ -7,7 +7,7 @@ sha1 = "0.6.0"
 serde = { version = "1.0", features = ["derive"] }
 */
 
-use crate::repo_hiding::application_data::SerializationError;
+use crate::repo_hiding::data_type::SerializationError;
 use serde::{Deserialize, Serialize};
 use sha1::{Digest, Sha1};
 use std::fs::{self, File};
