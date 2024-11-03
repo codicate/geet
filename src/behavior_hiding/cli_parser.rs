@@ -1,14 +1,13 @@
+/*B.2.1 CLI Parser (Angie)*/
+
 use clap::{Parser, Subcommand};
 
+use super::file_system_commands::{FileSystemCommands, RepositoryCommand};
+use super::output_formatting::{FormatStyle, OutputFormatter};
 mod cmd {
     pub mod init {
         pub fn main() {
             println!("Init command executed");
-        }
-    }
-    pub mod commit {
-        pub fn main(message: &str) {
-            println!("Commit command executed with message: {}", message);
         }
     }
 }
@@ -22,10 +21,11 @@ pub struct CLI {
 
 #[derive(Subcommand)]
 pub enum DVCSCommands {
-    Init {},
-    Commit {
-        #[arg(short, required = true)]
-        message: String,
+    Init {
+        #[arg(short, long)]
+        path: String,
+        #[arg(long)]
+        default_branch: Option<String>,
     },
 }
 
@@ -60,18 +60,34 @@ impl CLI {
 
     pub fn run() {
         let input: Vec<String> = std::env::args().collect(); // Collect command line arguments
+        let formatter = OutputFormatter::new(FormatStyle::Colored); // Instantiate OutputFormatter
+
         match CLI::parse_command(&input) {
-            Ok(command) => match command {
-                DVCSCommands::Init {} => {
-                    println!("Init command called");
+            Ok(command) => {
+                let fs_commands = FileSystemCommands {};
+                match command {
+                    DVCSCommands::Init {
+                        path,
+                        default_branch,
+                    } => {
+                        let result = fs_commands.repository_calls(RepositoryCommand::Init {
+                            path,
+                            default_branch,
+                        });
+                        match result {
+                            Ok(_) => formatter.display_command_execution_status(true, "Init"),
+                            Err(e) => formatter
+                                .display_syntax_error(&format!("Error executing command: {:?}", e)),
+                        }
+                    }
                 }
-                DVCSCommands::Commit { message } => {
-                    println!("Commit command called with message: {}", message);
-                }
-            },
+            }
             Err(e) => match e {
-                CommandError::InvalidCommand(msg) => eprintln!("Error: {}", msg),
-                CommandError::ParseError(msg) => eprintln!("Parse Error: {}", msg),
+                CommandError::InvalidCommand(msg) => formatter
+                    .display_syntax_error(&format!("You entered an unrecognized command. {}", msg)),
+                CommandError::ParseError(msg) => {
+                    formatter.display_syntax_error(&format!("It's our fault. {}", msg))
+                }
             },
         }
     }
