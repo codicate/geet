@@ -38,7 +38,7 @@ pub fn get_revision(commit_hash: &String) -> Commit {
 // get the parent that the revision is pointing to
 pub fn get_parent_revision(commit_hash: &String) -> Option<Commit> {
     let commit = get_revision(commit_hash);
-    if let Some(parent_hash) = commit.parent {
+    if let Some(parent_hash) = commit.parent_hash {
         Some(get_revision(&parent_hash))
     } else {
         None
@@ -48,5 +48,5 @@ pub fn get_parent_revision(commit_hash: &String) -> Option<Commit> {
 // apply the changes from the revision to the working directory
 pub fn checkout(commit_hash: &String) {
     let commit = get_revision(commit_hash);
-    update_cwd(&commit.id);
+    update_cwd(&commit.tree_hash);
 }

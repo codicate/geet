@@ -7,7 +7,7 @@ sha1 = "0.6.0"
 serde = { version = "1.0", features = ["derive"] }
 */
 
-use crate::repo_hiding::data_type::SerializationError;
+// use crate::repo_hiding::data_type::SerializationError;
 use serde::{Deserialize, Serialize};
 use sha1::{Digest, Sha1};
 use std::fs::{self, File};
@@ -97,7 +97,7 @@ pub fn deserialize_metadata<T: DeserializeOwned>(data: &[u8]) -> Result<T> {
 
 // TODO
 trait DeserializeOwned: for<'de> Deserialize<'de> {}
-type DeserializationError = SerializationError;
+// type DeserializationError = SerializationError;
 
 // 4 new methods
 // Stores a serializable object and returns its SHA-1 hash.
