@@ -3,12 +3,12 @@ use serde_json;
 
 /* stores repository metadata (not needed in minimal prototype). */
 #[derive(Serialize, Deserialize, Debug)]
-pub struct RepoConfig {
+pub struct RepositoryConfig {
     pub name: String,           // Repo name
     pub default_branch: String, // default branch name
 }
 
-impl RepoConfig {
+impl RepositoryConfig {
     pub fn serialize(&self) -> String {
         serde_json::to_string(self)
             .expect(format!("Failed to serialize repository config {:#?}", self).as_str())

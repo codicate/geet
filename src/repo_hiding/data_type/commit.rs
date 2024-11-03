@@ -6,7 +6,7 @@ use serde_json;
 pub struct CommitMetadata {
     pub author: String,
     pub message: String,
-    pub timestamp: i64,
+    pub timestamp: String,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
