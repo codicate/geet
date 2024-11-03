@@ -13,11 +13,8 @@ pub struct RepoOptions {
 
 #[derive(Default, Debug)]
 pub struct RevisionOptions {
-    pub revision_id: Option<String>,
-    pub file_path: Option<String>,
     pub commit_message: Option<String>,
-    pub author: Option<String>,
-    pub parent_commit: Option<String>,
+    pub author: Option<String>
 }
 
 #[derive(Debug)]
@@ -68,28 +65,27 @@ pub struct RepositoryCommands {
 }
 
 impl RepositoryCommands {
-    fn status_action(&self) {
+    pub fn status_action(&self) {
         let result = self.inspect_repo(self.repo_options.clone(), InspectionType::Status);
         println!("{:?}", result);
     }
 
-    fn heads_action(&self) {
+    pub fn heads_action(&self) {
         let result = self.inspect_repo(self.repo_options.clone(), InspectionType::Heads);
         println!("{:?}", result);
     }
 
-    fn commit_action(&self, commit_message: &str, author: &str, parent_commit: Option<&str>) {
+    pub fn commit_action(&self, commit_message: &str, author: &str) {
         let options = RevisionOptions {
             commit_message: Some(commit_message.to_string()),
             author: Some(author.to_string()),
-            parent_commit: parent_commit.map(|s| s.to_string()),
-            ..Default::default()
         };
         let result = self.manage_revisions(options, RevisionAction::Commit);
         println!("{:?}", result);
     }
 
-    pub fn inspect_repo(
+
+    fn inspect_repo(
         &self,
         _options: RepoOptions,
         inspection_type: InspectionType,
@@ -109,7 +105,7 @@ impl RepositoryCommands {
         }
     }
 
-    pub fn manage_revisions(
+     fn manage_revisions(
         &self,
         options: RevisionOptions,
         revision_action: RevisionAction,
@@ -123,18 +119,12 @@ impl RepositoryCommands {
             }
         };
         match revision_action {
-            RevisionAction::Checkout => {
-                // Ensure a revision ID is provided for checkout
-                if let Some(ref_name) = options.revision_id.clone() {
-                    // Attempt to perform the checkout
-                    checkout_commit(&ref_name); // This calls the actual checkout function
-                    Ok(RevisionResult::CheckoutResult {
-                        success_message: format!("Checked out revision {}", ref_name),
-                    })
-                } else {
-                    Err(StatusError::InvalidCommand) // Return an error if no revision ID is provided
-                }
-            }
+        
+            RevisionAction::Checkout => todo!(),
+            RevisionAction::Diff => todo!(),
+            RevisionAction::Cat => todo!(),
+            RevisionAction::Commit => todo!(),
+            RevisionAction::Log => todo!(),
             RevisionAction::Commit => {
                 println!(
                     "Committing all changes in repository at path: {}",
@@ -181,5 +171,5 @@ fn main() {
         revision_options,
     };
 
-    repository_commands.commit_action("Initial commit", "Author Name", Some("parent-commit-id"));
+    repository_commands.commit_action("Initial commit", "Author Name");
 }
