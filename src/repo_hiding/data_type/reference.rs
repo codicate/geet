@@ -12,9 +12,9 @@ pub enum RefType {
 /*  represents a branch or tag reference (not needed in minimal prototype). */
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Ref {
-    pub ref_type: RefType, // Type of reference (branch or tag)
-    pub name: String,      // Branch or tag name
-    pub commit_hash: Hash, // Associated commit hash
+    pub ref_type: RefType,         // Type of reference (branch or tag)
+    pub name: String,              // Branch or tag name
+    pub commit_hash: Option<Hash>, // Associated commit hash
 }
 
 impl Ref {

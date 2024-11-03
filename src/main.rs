@@ -2,7 +2,8 @@ mod behavior_hiding;
 mod file_hiding;
 mod repo_hiding;
 
-use repo_hiding::operation::revision::{checkout, create_revision};
+use repo_hiding::operation::branch::checkout_commit;
+use repo_hiding::operation::revision::create_revision;
 use std::env;
 
 fn main() {
@@ -37,7 +38,7 @@ fn main() {
             }
 
             let hash = &args[2];
-            let revision = checkout(hash);
+            let revision = checkout_commit(hash);
             println!("Retrieved revision: {:?}", revision);
         }
         _ => {

@@ -9,13 +9,13 @@ serde_json = "1.0"
 
 pub type Hash = String;
 mod commit;
-pub use commit::{Commit, CommitMetadata};
+pub use commit::*;
 mod tree;
-pub use tree::Tree;
+pub use tree::*;
 mod reference;
-pub use reference::{Ref, RefType};
+pub use reference::*;
 mod repo;
-pub use repo::RepoConfig;
+pub use repo::*;
 
 /*
 Test Cases for Commit Serialization/Deserialization:

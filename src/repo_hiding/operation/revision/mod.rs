@@ -1,17 +1,8 @@
 mod cwd;
-// use super::branch::{get_head, update_head};
+use super::branch::{get_head, update_head};
 use crate::file_hiding::file_log::{retrieve_object, store_object};
-use crate::file_hiding::ref_log::{create_ref, get_ref};
 use crate::repo_hiding::data_type::{Commit, CommitMetadata, Hash};
 use cwd::{read_cwd, update_cwd};
-
-fn get_head() -> Option<Hash> {
-    get_ref("HEAD").unwrap_or_default()
-}
-
-fn update_head(new_hash: &Hash) {
-    create_ref("HEAD", &new_hash).unwrap();
-}
 
 // create a new revision with the given metadata
 pub fn create_revision(metadata: CommitMetadata) -> Hash {
@@ -46,7 +37,7 @@ pub fn get_parent_revision(commit_hash: &String) -> Option<Commit> {
 }
 
 // apply the changes from the revision to the working directory
-pub fn checkout(commit_hash: &String) {
+pub fn apply_revision(commit_hash: &String) {
     let commit = get_revision(commit_hash);
     update_cwd(&commit.tree_hash);
 }
