@@ -1,0 +1,23 @@
+{
+	"configurations": [
+		{
+			"type": "cppvsdbg",
+			"request": "launch",
+			"name": "run geet",
+			"cwd": "${workspaceFolder}",
+			"program": "${workspaceFolder}\\target\\debug\\geet.exe",
+			"environment": [
+				{
+					"name": "RUST_BACKTRACE",
+					"value": "short"
+				},
+				{
+					"name": "RUSTC_TOOLCHAIN",
+					"value": "C:\\Users\\codic\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc"
+				}
+			],
+			"args": ["get", "bb54805390af764005951d1649e2072669e94cef"],
+			"sourceFileMap": {}
+		}
+	]
+}

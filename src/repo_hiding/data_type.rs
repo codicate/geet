@@ -44,7 +44,8 @@ impl Commit {
     }
 
     pub fn deserialize(data: &str) -> Self {
-        serde_json::from_str(data).unwrap()
+        serde_json::from_str(data)
+            .expect(format!("Failed to deserialize commit: {}", data).as_str())
     }
 }
 

@@ -2,10 +2,11 @@ mod behavior_hiding;
 mod file_hiding;
 mod repo_hiding;
 
-use repo_hiding::operation::revision::{create_revision, get_revision};
+use repo_hiding::operation::revision::{checkout, create_revision};
 use std::env;
 
 fn main() {
+    env::set_var("RUST_BACKTRACE", "1");
     let args: Vec<String> = env::args().collect();
 
     if args.len() < 2 {
@@ -36,7 +37,7 @@ fn main() {
             }
 
             let hash = &args[2];
-            let revision = get_revision(hash);
+            let revision = checkout(hash);
             println!("Retrieved revision: {:?}", revision);
         }
         _ => {

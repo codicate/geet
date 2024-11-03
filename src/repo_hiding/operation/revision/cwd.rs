@@ -48,9 +48,9 @@ fn update_cwd_helper(path: &str, hash: &Hash) -> Result<()> {
 
         if node.is_dir {
             fs::create_dir(path)?;
-            update_cwd_helper(&path_string, &hash)?;
+            update_cwd_helper(&path_string, &node.hash)?;
         } else {
-            let contents = retrieve_object(&hash)?;
+            let contents = retrieve_object(&node.hash)?;
             let mut file = fs::File::create(path)?;
             file.write_all(contents.as_bytes())?;
             file.flush()?;
