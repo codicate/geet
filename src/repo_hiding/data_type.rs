@@ -23,24 +23,28 @@ pub struct CommitMetadata {
 /* This is a commit in the DVCS. */
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Commit {
-    pub id: Hash,                 // Commit hash (e.g., SHA-1)
-    pub parent: Option<Hash>,     // Hash of the parent commit
-    pub metadata: CommitMetadata, // Commit metadata (author, message, timestamp)
+    pub tree_hash: Hash,           // Hash of the root tree the commit points to
+    pub parent_hash: Option<Hash>, // Hash of the parent commit
+    pub metadata: CommitMetadata,  // Commit metadata (author, message, timestamp)
 }
 
 impl Commit {
-    /* creates a new `Commit` instance with the specified fields. */
-    pub fn new_commit(id: Hash, parent: Option<Hash>, metadata: CommitMetadata) -> Self {
-        Commit {
-            id,
-            parent,
+    pub fn new_commit(
+        tree_hash: Hash,
+        parent_hash: Option<Hash>,
+        metadata: CommitMetadata,
+    ) -> Self {
+        Self {
+            tree_hash,
+            parent_hash,
             metadata,
         }
     }
 
     // TODO (Optional): change it back to serialize to vectcor
     pub fn serialize(&self) -> String {
-        serde_json::to_string(self).unwrap()
+        serde_json::to_string(self)
+            .expect(format!("Failed to serialize commit {:#?}", self).as_str())
     }
 
     pub fn deserialize(data: &str) -> Self {
