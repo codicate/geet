@@ -64,13 +64,14 @@ pub struct RepositoryCommands {
 
 impl RepositoryCommands {
 
-    pub fn commit_action(&self, commit_message: &str, author: &str) {
+    pub fn commit_action(&self, commit_message: &str, author: &str) -> Result<RevisionResult, StatusError> {
         let options = RevisionOptions {
             commit_message: Some(commit_message.to_string()),
             author: Some(author.to_string()),
         };
         let result = self.manage_revisions(options, RevisionAction::Commit);
         println!("{:?}", result);
+        result
     }
 
 

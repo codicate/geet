@@ -2,11 +2,21 @@
 use crate::repo_hiding::data_type::RepositoryConfig;
 use std::fs;
 use std::path::Path;
+use std::fmt; 
 
 #[derive(Debug)]
 pub enum RepoError {
     InitializationFailed(String),
     SerializationError(String),
+}
+
+impl fmt::Display for RepoError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            RepoError::InitializationFailed(msg) => write!(f, "Initialization Failed: {}", msg),
+            RepoError::SerializationError(msg) => write!(f, "Serialization Error: {}", msg),
+        }
+    }
 }
 
 impl RepositoryConfig {

@@ -2,9 +2,9 @@
 
 use clap::{Parser, Subcommand};
 
-use crate::file_system_commands::{FileSystemCommands, RepositoryCommand};
-use crate::output_formatting::{OutputFormatter, FormatStyle};
-use crate::repo_status_commands::{RepoOptions, RepositoryCommands, RevisionAction, RevisionOptions};
+use crate::behavior_hiding::file_system_commands::{FileSystemCommands, RepositoryCommand};
+use crate::behavior_hiding::output_formatting::{OutputFormatter, FormatStyle};
+use crate::behavior_hiding::status_command::{RepoOptions, RepositoryCommands, RevisionAction, RevisionOptions};
 
 mod cmd {
     //This needs to be replaced with the actual init command
@@ -25,10 +25,12 @@ pub struct CLI {
 #[derive(Subcommand)]
 pub enum DVCSCommands {
     Init {
+        #[arg(short)]
+        name: String,
         #[arg(short,long)]
         path: String,
         #[arg(long)]
-        default_branch: Option<String>
+        default_branch: String
     },
     Commit {
         #[arg(long)]
@@ -82,8 +84,8 @@ impl CLI {
                 let repo_commands = RepositoryCommands {repo_options, revision_options};
                 
                 match command {
-                    DVCSCommands::Init { path, default_branch} => {
-                        let result = fs_commands.repository_calls(RepositoryCommand::Init { path, default_branch });
+                    DVCSCommands::Init { name, path, default_branch} => {
+                        let result = fs_commands.repository_calls(RepositoryCommand::Init { name, path, default_branch });
                         match result {
                             Ok(_) => formatter.display_command_execution_status(true, "Init"),
                             Err(e) => formatter.display_syntax_error(&format!("Error executing command: {:?}", e)),
