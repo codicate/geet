@@ -27,17 +27,16 @@ pub struct CLI {
 #[derive(Subcommand)]
 pub enum DVCSCommands {
     Init {
-        #[arg(short)]
         name: String,
-        #[arg(short, long)]
+        #[arg(short, long, default_value = ".")]
         path: String,
-        #[arg(long)]
+        #[arg(long, default_value = "main")]
         default_branch: String,
     },
     Commit {
-        #[arg(long)]
-        commit_message: String,
         #[arg(short, long)]
+        message: String,
+        #[arg(short, long, default_value = "Anonymous")]
         author: String,
     },
     Cleanup {},
@@ -108,11 +107,8 @@ impl CLI {
                                 .display_syntax_error(&format!("Error executing command: {:?}", e)),
                         }
                     }
-                    DVCSCommands::Commit {
-                        commit_message,
-                        author,
-                    } => {
-                        let result = repo_commands.commit_action(&commit_message, &author);
+                    DVCSCommands::Commit { message, author } => {
+                        let result = repo_commands.commit_action(&message, &author);
                         match result {
                             Ok(_) => formatter.display_command_execution_status(true, "Commit"),
                             Err(e) => formatter
