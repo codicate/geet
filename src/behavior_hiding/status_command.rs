@@ -1,7 +1,9 @@
 use chrono::Utc;
 
-
-use crate::repo_hiding::{data_type::CommitMetadata, operation::revision::create_revision};
+use crate::repo_hiding::{
+    data_type::CommitMetadata,
+    operation::{branch::get_head, revision::create_revision},
+};
 
 #[derive(Clone)]
 pub struct RepoOptions {
@@ -12,7 +14,7 @@ pub struct RepoOptions {
 #[derive(Default, Debug)]
 pub struct RevisionOptions {
     pub commit_message: Option<String>,
-    pub author: Option<String>
+    pub author: Option<String>,
 }
 
 #[derive(Debug)]
@@ -63,8 +65,11 @@ pub struct RepositoryCommands {
 }
 
 impl RepositoryCommands {
-
-    pub fn commit_action(&self, commit_message: &str, author: &str) -> Result<RevisionResult, StatusError> {
+    pub fn commit_action(
+        &self,
+        commit_message: &str,
+        author: &str,
+    ) -> Result<RevisionResult, StatusError> {
         let options = RevisionOptions {
             commit_message: Some(commit_message.to_string()),
             author: Some(author.to_string()),
@@ -73,7 +78,6 @@ impl RepositoryCommands {
         println!("{:?}", result);
         result
     }
-
 
     fn inspect_repo(
         &self,
@@ -86,7 +90,7 @@ impl RepositoryCommands {
                 untracked_files: vec!["newfile.txt".to_string()],
             }),
             InspectionType::Heads => {
-                let head_commit = get_head();
+                let head_commit = get_head().unwrap_or_default();
                 Ok(InspectionResult::HeadStatus {
                     branches: vec!["main".to_string(), "feature-branch".to_string()],
                     head_commit: head_commit.to_string(),
@@ -95,7 +99,7 @@ impl RepositoryCommands {
         }
     }
 
-     fn manage_revisions(
+    fn manage_revisions(
         &self,
         options: RevisionOptions,
         revision_action: RevisionAction,
@@ -109,7 +113,6 @@ impl RepositoryCommands {
             }
         };
         match revision_action {
-        
             RevisionAction::Checkout => todo!(),
             RevisionAction::Diff => todo!(),
             RevisionAction::Cat => todo!(),
@@ -143,22 +146,22 @@ impl RepositoryCommands {
     }
 }
 
-// Mock function for head retrieval
-fn get_head() -> String {
-    "mock-head-hash".to_string()
-}
+// // Mock function for head retrieval
+// fn get_head() -> String {
+//     "mock-head-hash".to_string()
+// }
 
-fn main() {
-    let repo_options = RepoOptions {
-        path: Some("path/to/your/repository".to_string()),
-        current_branch: Some("main".to_string()),
-    };
+// fn main() {
+//     let repo_options = RepoOptions {
+//         path: Some("path/to/your/repository".to_string()),
+//         current_branch: Some("main".to_string()),
+//     };
 
-    let revision_options = RevisionOptions::default();
-    let repository_commands = RepositoryCommands {
-        repo_options,
-        revision_options,
-    };
+//     let revision_options = RevisionOptions::default();
+//     let repository_commands = RepositoryCommands {
+//         repo_options,
+//         revision_options,
+//     };
 
-    repository_commands.commit_action("Initial commit", "Author Name");
-}
+//     repository_commands.commit_action("Initial commit", "Author Name");
+// }

@@ -16,13 +16,11 @@ use std::path::Path;
 
 const BASE_PATH: &str = "./.geet/objects";
 
+// TODO: convert json into string before storing, but rn keep as json for debugging
 pub fn store_object(data: &String) -> Result<String> {
-    // Convert data to JSON format
-    let json_data = serde_json::to_string(data)?;
-
     // Generate SHA-1 hash
     let mut hasher = Sha1::new();
-    hasher.update(json_data.as_bytes());
+    hasher.update(data.as_bytes());
     let hash = hasher.finalize();
     let hash_string = format!("{:x}", hash);
 
@@ -33,7 +31,7 @@ pub fn store_object(data: &String) -> Result<String> {
     // Write data to a file named with its hash
     let file_path = format!("{}/{}", dir_path, hash_string);
     let mut file = File::create(&file_path)?;
-    file.write_all(json_data.as_bytes())?;
+    file.write_all(data.as_bytes())?;
 
     Ok(hash_string)
 }
@@ -59,12 +57,9 @@ pub fn retrieve_object(hash: &String) -> Result<String> {
     // Read data from the file
     let mut file = File::open(&file_path)?;
     let mut data = String::new();
+
     file.read_to_string(&mut data)?;
-
-    // Convert JSON string back to data
-    let json_data: String = serde_json::from_str(&data)?;
-
-    Ok(json_data)
+    Ok(data)
 }
 
 /* deletes a file at a specified path. */

@@ -7,6 +7,7 @@ use crate::behavior_hiding::output_formatting::{FormatStyle, OutputFormatter};
 use crate::behavior_hiding::status_command::{
     RepoOptions, RepositoryCommands, RevisionAction, RevisionOptions,
 };
+use crate::repo_hiding::operation::branch::checkout_commit;
 
 mod cmd {
     //This needs to be replaced with the actual init command
@@ -38,6 +39,9 @@ pub enum DVCSCommands {
         message: String,
         #[arg(short, long, default_value = "Anonymous")]
         author: String,
+    },
+    Checkout {
+        hash: String,
     },
     Cleanup {},
 }
@@ -77,9 +81,14 @@ impl CLI {
 
         match CLI::parse_command(&input) {
             Ok(command) => {
+                let cwd = std::env::current_dir()
+                    .unwrap()
+                    .to_str()
+                    .unwrap()
+                    .to_string();
                 //Dummy variables
                 let repo_options = RepoOptions {
-                    path: Some("path/to/your/repository".to_string()),
+                    path: Some(cwd),
                     current_branch: Some("main".to_string()),
                 };
                 let revision_options = RevisionOptions::default();
@@ -119,6 +128,14 @@ impl CLI {
                     DVCSCommands::Cleanup {} => {
                         let result = cleanup_helper();
                     }
+                    DVCSCommands::Checkout { hash } => {
+                        let result = checkout_helper(&hash);
+                        match result {
+                            Ok(_) => formatter.display_command_execution_status(true, "Checkout"),
+                            Err(e) => formatter
+                                .display_syntax_error(&format!("Error executing command: {:?}", e)),
+                        }
+                    }
                 }
             }
             Err(e) => match e {
@@ -138,4 +155,9 @@ fn cleanup_helper() {
     let path = path.to_str().unwrap();
     let path = format!("{}/.geet", path);
     let _ = std::fs::remove_dir_all(path);
+}
+
+fn checkout_helper(hash: &String) -> std::io::Result<()> {
+    checkout_commit(hash);
+    Ok(())
 }

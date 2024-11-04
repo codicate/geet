@@ -70,6 +70,11 @@ fn delete_cwd(path: &str) -> Result<()> {
         let path = child?.path();
         let path_string = strip_path(&path);
 
+        // ignore the ./geet folder
+        if path_string.starts_with(".geet") {
+            continue;
+        }
+
         if path.is_dir() {
             delete_cwd(&path_string)?;
         } else {
