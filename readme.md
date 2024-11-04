@@ -1,11 +1,32 @@
 create a test repo at ./test and cd into it
 
 ```
+mkdir test
+cd test
+```
+
+to init a new repo
+
+```
 cargo run -- init test
 ```
 
+to make a new commit
+
 ```
 cargo run -- commit -m "first one"
+```
+
+to checkout a previous commit using its hash
+
+```
+cargo run -- checkout a145d0486463ceb2840f5c871608f142b713736f
+```
+
+to clean up the repository and try these commands again
+
+```
+cargo run -- cleanup
 ```
 
 # todo
