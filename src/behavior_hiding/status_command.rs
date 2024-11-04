@@ -113,7 +113,6 @@ impl RepositoryCommands {
             RevisionAction::Checkout => todo!(),
             RevisionAction::Diff => todo!(),
             RevisionAction::Cat => todo!(),
-            RevisionAction::Commit => todo!(),
             RevisionAction::Log => todo!(),
             RevisionAction::Commit => {
                 println!(
