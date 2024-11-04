@@ -1,8 +1,11 @@
-// repository.rs
-use crate::repo_hiding::data_type::RepositoryConfig;
-use std::fs;
+use std::fs::{self, File};
+use std::io::Write;
 use std::path::Path;
-use std::fmt; 
+use crate::repo_hiding::data_type::RepositoryConfig;
+use crate::file_hiding::ref_log::{store_ref};
+use crate::repo_hiding::operation::branch::{create_ref, update_head};
+use crate::repo_hiding::data_type::{RefType, Hash};
+use std::fmt;
 
 #[derive(Debug)]
 pub enum RepoError {
@@ -38,6 +41,14 @@ impl RepositoryConfig {
             name: name.clone(),
             default_branch: default_branch.clone(),
         };
+
+        //Create the default branch reference using `create_ref`
+        //Here, None is passed for the hash since no commits exist yet
+        let branch_ref = create_ref(RefType::Branch, default_branch.clone(), None);
+
+        // Set HEAD to point to the default branch
+        update_head(&branch_ref.commit_hash.unwrap_or_default());
+
 
         // Serialize the config to JSON format
         let serialized_config = config.serialize();
