@@ -1,9 +1,7 @@
 use chrono::Utc;
 
-use crate::repo_hiding::{
-    data_type::CommitMetadata,
-    operation::{branch::checkout_commit, revision::create_revision},
-};
+
+use crate::repo_hiding::{data_type::CommitMetadata, operation::revision::create_revision};
 
 #[derive(Clone)]
 pub struct RepoOptions {
@@ -65,15 +63,6 @@ pub struct RepositoryCommands {
 }
 
 impl RepositoryCommands {
-    pub fn status_action(&self) {
-        let result = self.inspect_repo(self.repo_options.clone(), InspectionType::Status);
-        println!("{:?}", result);
-    }
-
-    pub fn heads_action(&self) {
-        let result = self.inspect_repo(self.repo_options.clone(), InspectionType::Heads);
-        println!("{:?}", result);
-    }
 
     pub fn commit_action(&self, commit_message: &str, author: &str) {
         let options = RevisionOptions {
