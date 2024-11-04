@@ -4,7 +4,7 @@ use std::fs;
 use std::io::{Result, Write};
 use std::path::PathBuf;
 
-const CWD: &str = "./test";
+const CWD: &str = "./";
 
 pub fn read_cwd() -> Hash {
     read_cwd_helper(CWD).unwrap()
@@ -17,6 +17,11 @@ fn read_cwd_helper(path: &str) -> Result<String> {
     for child in children {
         let path = child?.path();
         let path_string = strip_path(&path);
+
+        // ignore the ./geet folder
+        if path_string.starts_with(".geet") {
+            continue;
+        }
 
         let hash = if path.is_dir() {
             read_cwd_helper(&path_string).unwrap()
