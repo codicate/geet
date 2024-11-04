@@ -1,7 +1,7 @@
 use crate::file_hiding::ref_log::store_ref;
 use crate::repo_hiding::data_type::RepositoryConfig;
 use crate::repo_hiding::data_type::{Hash, RefType};
-use crate::repo_hiding::operation::branch::{create_ref, update_head};
+use crate::repo_hiding::operation::branch::{create_head, create_ref, update_head};
 use std::fmt;
 use std::fs::{self, File};
 use std::io::Write;
@@ -42,23 +42,18 @@ impl RepositoryConfig {
         let objects_path = format!("{}/.geet/objects", path);
         fs::create_dir_all(&objects_path).unwrap();
 
-        // Create the RepositoryConfig instance
-        let config = RepositoryConfig {
-            name: name.clone(),
-            default_branch: default_branch.clone(),
-        };
+        // Create the HEAD reference
+        create_head();
 
         //Create the default branch reference using `create_ref`
         //Here, None is passed for the hash since no commits exist yet
         let branch_ref = create_ref(RefType::Branch, default_branch.clone(), None);
 
-        // create the HEAD reference
-        // The HEAD reference points to the default branch
-        let head_ref = create_ref(
-            RefType::Head,
-            "HEAD".to_string(),
-            Some(branch_ref.commit_hash.unwrap_or_default()),
-        );
+        // Create the RepositoryConfig instance
+        let config = RepositoryConfig {
+            name: name.clone(),
+            default_branch: default_branch.clone(),
+        };
 
         // Serialize the config to JSON format
         let serialized_config = config.serialize();

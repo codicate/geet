@@ -52,6 +52,17 @@ pub fn delete_ref(name: &String) {
     _delete_ref(name.as_str()).unwrap();
 }
 
+pub fn create_head() {
+    let data = Ref {
+        ref_type: RefType::Head,
+        name: "HEAD".to_string(),
+        commit_hash: None,
+    };
+
+    let serialized = data.serialize();
+    store_ref(&data.name, &serialized).unwrap();
+}
+
 // get the hash that the HEAD is pointing to
 pub fn get_head() -> Option<Hash> {
     let head = get_ref(&"HEAD".to_string());
