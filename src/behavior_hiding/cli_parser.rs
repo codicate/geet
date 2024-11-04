@@ -40,6 +40,7 @@ pub enum DVCSCommands {
         #[arg(short, long)]
         author: String,
     },
+    Cleanup {},
 }
 
 pub enum CommandError {
@@ -118,6 +119,10 @@ impl CLI {
                                 .display_syntax_error(&format!("Error executing command: {:?}", e)),
                         }
                     }
+                    // TODO: remove this before release, just a debug command
+                    DVCSCommands::Cleanup {} => {
+                        let result = cleanup_helper();
+                    }
                 }
             }
             Err(e) => match e {
@@ -129,4 +134,12 @@ impl CLI {
             },
         }
     }
+}
+
+fn cleanup_helper() {
+    // This is a debug command to clean up the .geet directory
+    let path = std::env::current_dir().unwrap();
+    let path = path.to_str().unwrap();
+    let path = format!("{}/.geet", path);
+    let _ = std::fs::remove_dir_all(path);
 }
