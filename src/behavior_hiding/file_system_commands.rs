@@ -4,7 +4,7 @@ use std::path::Path;
 use crate::repo_hiding::operation::repo;
 use crate::repo_hiding::data_type::RepositoryConfig;
 
-pub struct FileSystemCommands {}
+pub struct FileSystemCommands;
 
 pub enum RepositoryCommand {
     Init {
@@ -21,15 +21,9 @@ pub enum CommandError {
 }
 
 impl FileSystemCommands {
-    pub fn repository_calls(&self, command: RepositoryCommand) -> Result<(), CommandError> {
-        match command {
-            RepositoryCommand::Init { name, path, default_branch } => {
-                // Call the init_repo function with the correct types
-                match RepositoryConfig::init_repo(name, path, default_branch) {  // Adjust here
-                    Ok(_) => Ok(()),
-                    Err(e) => Err(CommandError::ProcessFailed(e.to_string())),
-                }
-            }
-        }
+    pub fn init_repository(&self, name: String, path: String, default_branch: String) -> Result<(), CommandError> {
+        RepositoryConfig::init_repo(name, path, default_branch)
+            .map(|_| ())  
+            .map_err(|e| CommandError::ProcessFailed(e.to_string()))
     }
 }

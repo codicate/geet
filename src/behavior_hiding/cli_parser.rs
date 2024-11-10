@@ -54,34 +54,23 @@ pub enum CommandError {
 impl CLI {
     /// Parses the command-line input and returns a DVCS command or an error.
     pub fn parse_command(input: &[String]) -> Result<DVCSCommands, CommandError> {
-        let matches = CLI::try_parse_from(input);
-
-        match matches {
-            Ok(cli) => match cli.command {
-                Some(cmd) => Ok(cmd),
-                None => Err(CommandError::InvalidCommand(
-                    "No command provided.".to_string(),
-                )),
-            },
-            Err(err) => {
-                if err.kind() == clap::error::ErrorKind::UnknownArgument
-                    || err.kind() == clap::error::ErrorKind::InvalidSubcommand
-                {
-                    Err(CommandError::InvalidCommand(err.to_string()))
-                } else {
-                    Err(CommandError::ParseError(err.to_string()))
-                }
+        let cli = CLI::try_parse_from(input).map_err(|err| {
+            if err.kind() == clap::error::ErrorKind::UnknownArgument
+                || err.kind() == clap::error::ErrorKind::InvalidSubcommand
+            {
+                CommandError::InvalidCommand(err.to_string())
+            } else {
+                CommandError::ParseError(err.to_string())
             }
-        }
+        })?;
+        cli.command.ok_or(CommandError::InvalidCommand("No command provided.".to_string()))    
     }
 
     pub fn run() {
         let input: Vec<String> = std::env::args().collect(); // Collect command line arguments
-        let formatter = OutputFormatter::new(FormatStyle::Colored); // Instantiate OutputFormatter
+        let formatter = OutputFormatter::new(FormatStyle::Colored);
 
-        match CLI::parse_command(&input) {
-            Ok(command) => {
-                let cwd = std::env::current_dir()
+        let cwd = std::env::current_dir()
                     .unwrap()
                     .to_str()
                     .unwrap()
@@ -99,17 +88,15 @@ impl CLI {
                     revision_options,
                 };
 
+        match CLI::parse_command(&input) {
+            Ok(command) => {
                 match command {
                     DVCSCommands::Init {
                         name,
                         path,
                         default_branch,
                     } => {
-                        let result = fs_commands.repository_calls(RepositoryCommand::Init {
-                            name,
-                            path,
-                            default_branch,
-                        });
+                        let result = fs_commands.init_repository(name, path, default_branch);
                         match result {
                             Ok(_) => formatter.display_command_execution_status(true, "Init"),
                             Err(e) => formatter
