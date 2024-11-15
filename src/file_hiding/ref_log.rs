@@ -2,7 +2,7 @@ use std::fs::File;
 use std::io::{self, Read, Write};
 
 pub type Hash = String;
-const REFS_DIR: &str = "./.geet/refs";
+const REFS_DIR: &str = "./test/.geet/refs";
 /// Creates a new Ref object and writes it to `./geet/refs`.
 pub fn store_ref(name: &String, data: &String) -> io::Result<()> {
     let path = format!("{}/{}", REFS_DIR, name);

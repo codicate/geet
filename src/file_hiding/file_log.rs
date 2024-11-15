@@ -14,7 +14,7 @@ use std::fs::{self, File};
 use std::io::{self, Read, Result, Write};
 use std::path::Path;
 
-const BASE_PATH: &str = "./.geet/objects";
+const BASE_PATH: &str = "./test/.geet/objects";
 
 // TODO: convert json into string before storing, but rn keep as json for debugging
 pub fn store_object(data: &String) -> Result<String> {

@@ -9,7 +9,7 @@ pub struct CommitMetadata {
     pub timestamp: String,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Commit {
     pub tree_hash: Hash,           // Hash of the root tree the commit points to
     pub parent_hash: Option<Hash>, // Hash of the parent commit
