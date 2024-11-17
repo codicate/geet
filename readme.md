@@ -11,10 +11,21 @@ to init a new repo
 cargo run -- init test
 ```
 
+to add (stage) the file
+```
+cargo run -- add test.txt
+```
+
 to make a new commit
 
 ```
 cargo run -- commit -m "first one"
+```
+
+to check status
+
+```
+cargo run -- status
 ```
 
 to checkout a previous commit using its hash
