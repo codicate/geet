@@ -34,6 +34,9 @@ pub enum DVCSCommands {
         #[arg(long, default_value = "main")]
         default_branch: String,
     },
+    Add {
+        path: String,
+    },
     Commit {
         #[arg(short, long)]
         message: String,
@@ -43,6 +46,7 @@ pub enum DVCSCommands {
     Checkout {
         hash: String,
     },
+    Status {},
     Cleanup {},
 }
 
@@ -103,6 +107,14 @@ impl CLI {
                                 .display_syntax_error(&format!("Error executing command: {:?}", e)),
                         }
                     }
+                    DVCSCommands::Add { path } => {
+                        let result = fs_commands.add_file(&path);
+                        match result {
+                            Ok(_) => formatter.display_command_execution_status(true, &format!("Added {}", path)),
+                            Err(e) => formatter
+                                .display_syntax_error(&format!("Error adding file: {:?}", e)),
+                        }
+                    }
                     DVCSCommands::Commit { message, author } => {
                         let result = repo_commands.commit_action(&message, &author);
                         match result {
@@ -114,6 +126,27 @@ impl CLI {
                     // TODO: remove this before release, just a debug command
                     DVCSCommands::Cleanup {} => {
                         let result = cleanup_helper();
+                        match result {
+                            Ok(_) => formatter.display_command_execution_status(true, "Cleanup"),
+                            Err(e) => formatter.display_syntax_error(&format!("Error cleaning up: {}", e)),
+                        }
+                    }
+                    DVCSCommands::Status {} => {
+                        match fs_commands.get_status() {
+                            Ok(files) => {
+                                if files.is_empty() {
+                                    formatter.display_program_result("No files staged for commit");
+                                } else {
+                                    let mut status = String::from("Changes to be committed:\n");
+                                    for file in files {
+                                        status.push_str(&format!("  new file: {}\n", file));
+                                    }
+                                    formatter.display_program_result(&status);
+                                }
+                            },
+                            Err(e) => formatter
+                                .display_syntax_error(&format!("Error getting status: {:?}", e)),
+                        }
                     }
                     DVCSCommands::Checkout { hash } => {
                         let result = checkout_helper(&hash);
@@ -136,12 +169,13 @@ impl CLI {
     }
 }
 
-fn cleanup_helper() {
+fn cleanup_helper() -> std::io::Result<()> {
     // This is a debug command to clean up the .geet directory
     let path = std::env::current_dir().unwrap();
     let path = path.to_str().unwrap();
     let path = format!("{}/.geet", path);
     let _ = std::fs::remove_dir_all(path);
+    Ok(())
 }
 
 fn checkout_helper(hash: &String) -> std::io::Result<()> {
