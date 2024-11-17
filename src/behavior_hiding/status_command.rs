@@ -2,7 +2,7 @@ use chrono::Utc;
 
 use crate::repo_hiding::{
     data_type::CommitMetadata,
-    operation::{branch::get_head, revision::create_revision},
+    operation::{branch::{checkout_ref, get_head, list_commits}, revision::create_revision},
 };
 
 #[derive(Clone)]
@@ -15,12 +15,23 @@ pub struct RepoOptions {
 pub struct RevisionOptions {
     pub commit_message: Option<String>,
     pub author: Option<String>,
+    pub ref_name: Option<String>, 
+    pub count: Option<i32>,
 }
 
 #[derive(Debug)]
 pub enum InspectionType {
     Status,
     Heads,
+}
+
+#[derive(Debug)]
+pub enum RevisionAction {
+    Diff,
+    Cat,
+    Checkout,
+    Commit,
+    Log,
 }
 
 #[derive(Debug)]
@@ -33,15 +44,6 @@ pub enum InspectionResult {
         branches: Vec<String>,
         head_commit: String,
     },
-}
-
-#[derive(Debug)]
-pub enum RevisionAction {
-    Diff,
-    Cat,
-    Checkout,
-    Commit,
-    Log,
 }
 
 #[derive(Debug)]
@@ -59,6 +61,8 @@ pub enum StatusError {
     ActionFailed(String),
 }
 
+
+
 pub struct RepositoryCommands {
     pub repo_options: RepoOptions,
     pub revision_options: RevisionOptions,
@@ -73,11 +77,37 @@ impl RepositoryCommands {
         let options = RevisionOptions {
             commit_message: Some(commit_message.to_string()),
             author: Some(author.to_string()),
+            ref_name: None,
+            count: None,
         };
         let result = self.manage_revisions(options, RevisionAction::Commit);
         println!("{:?}", result);
         result
     }
+
+    pub fn checkout_action(&self, ref_name: &str) -> Result<RevisionResult, StatusError> {
+        let options = RevisionOptions {
+            commit_message: None,
+            author: None,
+            ref_name: Some(ref_name.to_string()), // Pass the reference name
+            count: None,
+        };
+        self.manage_revisions(options, RevisionAction::Checkout)
+    }
+
+    pub fn log_action(&self, ref_name: Option<String>, count: Option<i32>) -> Result<RevisionResult, StatusError> {
+        // Prepare the RevisionOptions with ref_name and count
+        let options = RevisionOptions {
+            commit_message: None, 
+            author: None,         
+            ref_name,             // Pass the ref_name provided by user input
+            count,                // Pass the count (number of commits to list) provided by user input
+        };
+    
+        // Call manage_revisions with the prepared options and the Log action
+        self.manage_revisions(options, RevisionAction::Log)
+    }
+    
 
     fn inspect_repo(
         &self,
@@ -113,10 +143,44 @@ impl RepositoryCommands {
             }
         };
         match revision_action {
-            RevisionAction::Checkout => todo!(),
+            RevisionAction::Checkout => {
+                if let Some(ref_name) = options.ref_name {
+                    // If ref_name is provided, call checkout_ref
+                    checkout_ref(&ref_name);
+                    Ok(RevisionResult::CheckoutResult {
+                        success_message: format!("Checked out ref: {}", ref_name),
+                    })
+                } else {
+                    // If no ref_name is provided, it might be an error
+                    Err(StatusError::ActionFailed("Reference name is required".to_string()))
+                }
+            },
             RevisionAction::Diff => todo!(),
             RevisionAction::Cat => todo!(),
-            RevisionAction::Log => todo!(),
+            RevisionAction::Log => {
+                // Get the ref_name and count from options
+                let ref_name = options.ref_name.unwrap_or_else(|| "HEAD".to_string()); // Default to HEAD if ref_name is not provided
+                let count = options.count.unwrap_or(i32::MAX); // Default to all commits if count is not provided
+    
+                // Call the list_commits function to get the commit history
+                let commits = list_commits(ref_name, Some(count));
+    
+                let commit_history: Vec<String> = commits
+                    .into_iter()
+                    .map(|commit| format!(
+                        "Commit ID: {}, Author: {}, Message: {}, Timestamp: {}", 
+                        commit.tree_hash,
+                        commit.metadata.author,
+                        commit.metadata.message,
+                        commit.metadata.timestamp
+                    ))
+                    .collect();
+
+                // Return the result as a LogResult
+                Ok(RevisionResult::LogResult { history: commit_history })
+            }
+            _ => Err(StatusError::InvalidCommand),
+    
             RevisionAction::Commit => {
                 println!(
                     "Committing all changes in repository at path: {}",
