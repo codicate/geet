@@ -1,13 +1,5 @@
-// file_log.rs
-// store, retrieve, and manage file versions in the repository.
-/*
-add the following [dependencies] to cargo.toml:
-[dependencies]
-sha1 = "0.6.0"
-serde = { version = "1.0", features = ["derive"] }
-*/
-
-// use crate::repo_hiding::data_type::SerializationError;
+// file_hiding/file_log.rs
+use super::index::{add_to_index, get_staged_files};
 use serde::{Deserialize, Serialize};
 use sha1::{Digest, Sha1};
 use std::fs::{self, File};
@@ -16,7 +8,6 @@ use std::path::Path;
 
 const BASE_PATH: &str = "./test/.geet/objects";
 
-// TODO: convert json into string before storing, but rn keep as json for debugging
 pub fn store_object(data: &String) -> Result<String> {
     // Generate SHA-1 hash
     let mut hasher = Sha1::new();
@@ -37,48 +28,51 @@ pub fn store_object(data: &String) -> Result<String> {
 }
 
 pub fn retrieve_object(hash: &String) -> Result<String> {
-    // Ensure the hash is at least two characters long
     if hash.len() < 2 {
-        return Err(io::Error::new(
-            io::ErrorKind::Other,
-            "Invalid hash provided",
-        ));
+        return Err(io::Error::new(io::ErrorKind::Other, "Invalid hash provided"));
     }
 
-    // Directory structure based on the first two characters of the hash
     let dir_path = format!("{}/{}", BASE_PATH, &hash[..2]);
     let file_path = format!("{}/{}", dir_path, hash);
 
-    // Check if the file exists
     if !Path::new(&file_path).exists() {
         return Err(io::Error::new(io::ErrorKind::NotFound, "File not found"));
     }
 
-    // Read data from the file
     let mut file = File::open(&file_path)?;
     let mut data = String::new();
-
     file.read_to_string(&mut data)?;
     Ok(data)
 }
 
-/* deletes a file at a specified path. */
+// Store a file and add it to the index
+pub fn store_file(path: &str) -> Result<String> {
+    let data = fs::read_to_string(path)?;
+    let hash = store_object(&data)?;
+    add_to_index(path)?;
+    Ok(hash)
+}
+
+// Get all staged files and their contents
+pub fn get_staged_contents() -> Result<Vec<(String, String)>> {
+    let mut contents = Vec::new();
+    for path in get_staged_files() {
+        let data = fs::read_to_string(&path)?;
+        contents.push((path, data));
+    }
+    Ok(contents)
+}
+
+// Keep existing functions...
 pub fn delete_data(path: &str) -> Result<()> {
-    // TODO: Implement file deletion functionality
     todo!()
 }
 
-/* lists all files within a directory, filtering for files only. */
 pub fn list_files(directory: &str) -> Result<Vec<String>> {
-    // TODO: Implement directory file listing functionality
     todo!()
 }
 
-/*
-serializes metadata for additional information about file versions.
-*/
 pub fn serialize_metadata<T: Serialize>(metadata: &T) -> Result<Vec<u8>> {
-    // TODO: Implement metadata serialization functionality
     todo!()
 }
 
