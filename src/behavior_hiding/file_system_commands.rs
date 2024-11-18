@@ -21,25 +21,19 @@ pub enum RepositoryCommand {
     Status,
 }
 
-#[derive(Debug)]
-pub enum CommandError {
-    InvalidPath,
-    ProcessFailed(String),
-}
 
 impl FileSystemCommands {
-    pub fn init_repository(&self, name: String, path: String, default_branch: String) -> Result<(), CommandError> {
+    pub fn init_repository(&self, name: String, path: String, default_branch: String) -> Result<(), String> {
         RepositoryConfig::init_repo(name, path, default_branch)
-            .map(|_| ())  
-            .map_err(|e| CommandError::ProcessFailed(e.to_string()))
+            .map(|_| ()) // If successful, return Ok(())
+            .map_err(|e| e.to_string())
     }
 
-    pub fn add_file(&self, path: &str) -> Result<(), CommandError> {
-        add_to_index(path)
-            .map_err(|e| CommandError::ProcessFailed(e.to_string()))
+    pub fn add_file(&self, path: &str) -> Result<(), String> {
+        add_to_index(path).map_err(|e| e.to_string())
     }
 
-    pub fn get_status(&self) -> Result<Vec<String>, CommandError> {
+    pub fn get_status(&self) -> Result<Vec<String>, String> {
         Ok(get_staged_files())
     }
 }

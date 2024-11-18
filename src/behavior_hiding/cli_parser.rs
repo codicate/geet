@@ -1,7 +1,7 @@
 /*B.2.1 CLI Parser (Angie)*/
 
 use clap::{Parser, Subcommand};
-
+use std::fmt;
 use crate::behavior_hiding::file_system_commands::{FileSystemCommands, RepositoryCommand};
 use crate::behavior_hiding::output_formatting::{FormatStyle, OutputFormatter};
 use crate::behavior_hiding::status_command::{
@@ -14,6 +14,19 @@ use crate::repo_hiding::operation::branch::checkout_commit;
 pub struct CLI {
     #[command(subcommand)]
     command: Option<DVCSCommands>,
+}
+
+impl fmt::Display for DVCSCommands {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            DVCSCommands::Init { .. } => write!(f, "Init"),
+            DVCSCommands::Add { .. } => write!(f, "Add"),
+            DVCSCommands::Commit { .. } => write!(f, "Commit"),
+            DVCSCommands::Checkout { .. } => write!(f, "Checkout"),
+            DVCSCommands::Status { .. } => write!(f, "Status"),
+            DVCSCommands::Cleanup { .. } => write!(f, "Cleanup"),
+        }
+    }
 }
 
 #[derive(Subcommand)]
@@ -98,14 +111,14 @@ impl CLI {
             }
         };
 
-        let result = match command {
-            DVCSCommands::Init { name, path, default_branch } => fs_commands.init_repository(name, path, default_branch),
+        let result = match &command {
+            DVCSCommands::Init { name, path, default_branch } => fs_commands.init_repository(name.clone(), path.clone(), default_branch.clone()),
 
             DVCSCommands::Add { path } => fs_commands.add_file(&path),
 
-            DVCSCommands::Commit { message, author } => repo_commands.commit_action(&message, &author),
+            // DVCSCommands::Commit { message, author } => repo_commands.commit_action(&message, &author),
 
-            DVCSCommands::Cleanup {} => cleanup_helper(),
+            // DVCSCommands::Cleanup {} => cleanup_helper(),
 
             DVCSCommands::Status {} => {
                 let files = fs_commands.get_status().unwrap_or_default();
@@ -113,13 +126,15 @@ impl CLI {
                 Ok(())
             }
 
-            DVCSCommands::Checkout { hash } => checkout_helper(&hash),
+            // DVCSCommands::Checkout { hash } => checkout_helper(&hash),
+            _ => Ok(()),
         };
-        
+
         match result {
-            Ok(_) => formatter.display_command_execution_status(true, "Command executed successfully"),
+            Ok(_) => formatter.display_command_execution_status(true, &command.to_string()),
             Err(e) => formatter.display_syntax_error(&format!("Error executing command: {:?}", e)),
         }
+        
     }
 }
 
