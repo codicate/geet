@@ -9,15 +9,6 @@ use crate::behavior_hiding::status_command::{
 };
 use crate::repo_hiding::operation::branch::checkout_commit;
 
-mod cmd {
-    //This needs to be replaced with the actual init command
-    pub mod init {
-        pub fn main() {
-            println!("Init command executed");
-        }
-    }
-}
-
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
 pub struct CLI {
@@ -92,79 +83,42 @@ impl CLI {
                     revision_options,
                 };
 
-        match CLI::parse_command(&input) {
-            Ok(command) => {
-                match command {
-                    DVCSCommands::Init {
-                        name,
-                        path,
-                        default_branch,
-                    } => {
-                        let result = fs_commands.init_repository(name, path, default_branch);
-                        match result {
-                            Ok(_) => formatter.display_command_execution_status(true, "Init"),
-                            Err(e) => formatter
-                                .display_syntax_error(&format!("Error executing command: {:?}", e)),
-                        }
-                    }
-                    DVCSCommands::Add { path } => {
-                        let result = fs_commands.add_file(&path);
-                        match result {
-                            Ok(_) => formatter.display_command_execution_status(true, &format!("Added {}", path)),
-                            Err(e) => formatter
-                                .display_syntax_error(&format!("Error adding file: {:?}", e)),
-                        }
-                    }
-                    DVCSCommands::Commit { message, author } => {
-                        let result = repo_commands.commit_action(&message, &author);
-                        match result {
-                            Ok(_) => formatter.display_command_execution_status(true, "Commit"),
-                            Err(e) => formatter
-                                .display_syntax_error(&format!("Error executing command: {:?}", e)),
-                        }
-                    }
-                    // TODO: remove this before release, just a debug command
-                    DVCSCommands::Cleanup {} => {
-                        let result = cleanup_helper();
-                        match result {
-                            Ok(_) => formatter.display_command_execution_status(true, "Cleanup"),
-                            Err(e) => formatter.display_syntax_error(&format!("Error cleaning up: {}", e)),
-                        }
-                    }
-                    DVCSCommands::Status {} => {
-                        match fs_commands.get_status() {
-                            Ok(files) => {
-                                if files.is_empty() {
-                                    formatter.display_program_result("No files staged for commit");
-                                } else {
-                                    let mut status = String::from("Changes to be committed:\n");
-                                    for file in files {
-                                        status.push_str(&format!("  new file: {}\n", file));
-                                    }
-                                    formatter.display_program_result(&status);
-                                }
-                            },
-                            Err(e) => formatter
-                                .display_syntax_error(&format!("Error getting status: {:?}", e)),
-                        }
-                    }
-                    DVCSCommands::Checkout { hash } => {
-                        let result = checkout_helper(&hash);
-                        match result {
-                            Ok(_) => formatter.display_command_execution_status(true, "Checkout"),
-                            Err(e) => formatter
-                                .display_syntax_error(&format!("Error executing command: {:?}", e)),
-                        }
-                    }
+        let command = match CLI::parse_command(&input){
+            Ok(cmd) => cmd,
+            Err(e) => {
+                match e {
+                    CommandError::InvalidCommand(msg) => formatter.display_syntax_error(&format!(
+                        "Invalid Command {}", msg
+                    )),
+                    CommandError::ParseError(msg) => formatter.display_syntax_error(&format!(
+                        "Parse Error {}", msg
+                    )),
                 }
+                std::process::exit(1);
             }
-            Err(e) => match e {
-                CommandError::InvalidCommand(msg) => formatter
-                    .display_syntax_error(&format!("You entered an unrecognized command. {}", msg)),
-                CommandError::ParseError(msg) => {
-                    formatter.display_syntax_error(&format!("It's our fault. {}", msg))
-                }
-            },
+        };
+
+        let result = match command {
+            DVCSCommands::Init { name, path, default_branch } => fs_commands.init_repository(name, path, default_branch),
+
+            DVCSCommands::Add { path } => fs_commands.add_file(&path),
+
+            DVCSCommands::Commit { message, author } => repo_commands.commit_action(&message, &author),
+
+            DVCSCommands::Cleanup {} => cleanup_helper(),
+
+            DVCSCommands::Status {} => {
+                let files = fs_commands.get_status().unwrap_or_default();
+                status_helper(files, &formatter);
+                Ok(())
+            }
+
+            DVCSCommands::Checkout { hash } => checkout_helper(&hash),
+        };
+        
+        match result {
+            Ok(_) => formatter.display_command_execution_status(true, "Command executed successfully"),
+            Err(e) => formatter.display_syntax_error(&format!("Error executing command: {:?}", e)),
         }
     }
 }
@@ -181,4 +135,16 @@ fn cleanup_helper() -> std::io::Result<()> {
 fn checkout_helper(hash: &String) -> std::io::Result<()> {
     checkout_commit(hash);
     Ok(())
+}
+
+fn status_helper(files: Vec<String>, formatter: &OutputFormatter) {
+    if files.is_empty() {
+        formatter.display_program_result("No files staged for commit");
+    } else {
+        let mut status = String::from("Changes to be committed:\n");
+        for file in files {
+            status.push_str(&format!("  new file: {}\n", file));
+        }
+        formatter.display_program_result(&status);
+    }
 }
