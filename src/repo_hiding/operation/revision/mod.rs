@@ -4,6 +4,8 @@ use crate::file_hiding::file_log::{retrieve_object, store_object};
 use crate::repo_hiding::data_type::{Commit, CommitMetadata, Hash};
 use cwd::{read_cwd, update_cwd};
 
+use crate::file_hiding::index::clear_index;
+
 // create a new revision with the given metadata
 pub fn create_revision(metadata: CommitMetadata) -> Hash {
     // create a new commit object
@@ -17,6 +19,10 @@ pub fn create_revision(metadata: CommitMetadata) -> Hash {
 
     // update HEAD
     update_head(&commit_hash);
+    
+    // Clear the index after successful commit
+    clear_index().unwrap_or_else(|e| eprintln!("Warning: Failed to clear index: {}", e));
+
     commit_hash
 }
 
