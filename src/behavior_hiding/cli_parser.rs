@@ -29,7 +29,7 @@ pub struct CLI {
 pub enum DVCSCommands {
     Init {
         name: String,
-        #[arg(short, long, default_value = ".")]
+        #[arg(short, long, default_value = "./test")]
         path: String,
         #[arg(long, default_value = "main")]
         default_branch: String,
@@ -67,7 +67,9 @@ impl CLI {
                 CommandError::ParseError(err.to_string())
             }
         })?;
-        cli.command.ok_or(CommandError::InvalidCommand("No command provided.".to_string()))    
+        cli.command.ok_or(CommandError::InvalidCommand(
+            "No command provided.".to_string(),
+        ))
     }
 
     pub fn run() {
@@ -75,22 +77,22 @@ impl CLI {
         let formatter = OutputFormatter::new(FormatStyle::Colored);
 
         let cwd = std::env::current_dir()
-                    .unwrap()
-                    .to_str()
-                    .unwrap()
-                    .to_string();
-                //Dummy variables
-                let repo_options = RepoOptions {
-                    path: Some(cwd),
-                    current_branch: Some("main".to_string()),
-                };
-                let revision_options = RevisionOptions::default();
+            .unwrap()
+            .to_str()
+            .unwrap()
+            .to_string();
+        //Dummy variables
+        let repo_options = RepoOptions {
+            path: Some(cwd),
+            current_branch: Some("main".to_string()),
+        };
+        let revision_options = RevisionOptions::default();
 
-                let fs_commands = FileSystemCommands {};
-                let repo_commands = RepositoryCommands {
-                    repo_options,
-                    revision_options,
-                };
+        let fs_commands = FileSystemCommands {};
+        let repo_commands = RepositoryCommands {
+            repo_options,
+            revision_options,
+        };
 
         match CLI::parse_command(&input) {
             Ok(command) => {
@@ -110,7 +112,8 @@ impl CLI {
                     DVCSCommands::Add { path } => {
                         let result = fs_commands.add_file(&path);
                         match result {
-                            Ok(_) => formatter.display_command_execution_status(true, &format!("Added {}", path)),
+                            Ok(_) => formatter
+                                .display_command_execution_status(true, &format!("Added {}", path)),
                             Err(e) => formatter
                                 .display_syntax_error(&format!("Error adding file: {:?}", e)),
                         }
@@ -128,26 +131,26 @@ impl CLI {
                         let result = cleanup_helper();
                         match result {
                             Ok(_) => formatter.display_command_execution_status(true, "Cleanup"),
-                            Err(e) => formatter.display_syntax_error(&format!("Error cleaning up: {}", e)),
+                            Err(e) => {
+                                formatter.display_syntax_error(&format!("Error cleaning up: {}", e))
+                            }
                         }
                     }
-                    DVCSCommands::Status {} => {
-                        match fs_commands.get_status() {
-                            Ok(files) => {
-                                if files.is_empty() {
-                                    formatter.display_program_result("No files staged for commit");
-                                } else {
-                                    let mut status = String::from("Changes to be committed:\n");
-                                    for file in files {
-                                        status.push_str(&format!("  new file: {}\n", file));
-                                    }
-                                    formatter.display_program_result(&status);
+                    DVCSCommands::Status {} => match fs_commands.get_status() {
+                        Ok(files) => {
+                            if files.is_empty() {
+                                formatter.display_program_result("No files staged for commit");
+                            } else {
+                                let mut status = String::from("Changes to be committed:\n");
+                                for file in files {
+                                    status.push_str(&format!("  new file: {}\n", file));
                                 }
-                            },
-                            Err(e) => formatter
-                                .display_syntax_error(&format!("Error getting status: {:?}", e)),
+                                formatter.display_program_result(&status);
+                            }
                         }
-                    }
+                        Err(e) => formatter
+                            .display_syntax_error(&format!("Error getting status: {:?}", e)),
+                    },
                     DVCSCommands::Checkout { hash } => {
                         let result = checkout_helper(&hash);
                         match result {
