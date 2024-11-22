@@ -54,6 +54,13 @@ impl Index {
             .map(|entry| entry.path.clone())
             .collect()
     }
+
+    // method to clear the index after commit
+    pub fn clear(&mut self) -> Result<()> {
+        self.entries.clear();
+        self.save()?;
+        Ok(())
+    }
 }
 
 pub fn add_to_index(path: &str) -> Result<()> {
@@ -64,4 +71,10 @@ pub fn add_to_index(path: &str) -> Result<()> {
 pub fn get_staged_files() -> Vec<String> {
     let index = Index::new();
     index.get_staged_entries()
+}
+
+// New function to clear the index
+pub fn clear_index() -> Result<()> {
+    let mut index = Index::new();
+    index.clear()
 }
