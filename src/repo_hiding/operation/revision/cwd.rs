@@ -1,4 +1,5 @@
 use crate::file_hiding::file_log::{retrieve_object, store_object};
+use crate::file_hiding::index::Index;
 use crate::repo_hiding::data_type::{Hash, Tree};
 use std::fs;
 use std::io::{Result, Write};
@@ -20,6 +21,11 @@ fn read_cwd_helper(path: &str) -> Result<String> {
 
         // ignore the ./geet folder
         if path_string.starts_with(".geet") {
+            continue;
+        }
+
+        let index = Index::new();
+        if path.is_file() && !index.is_in_index(path.to_str().unwrap()) {
             continue;
         }
 

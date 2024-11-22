@@ -1,11 +1,11 @@
 // src/file_hiding/index.rs
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs;
 use std::io::{self, Result};
 use std::path::Path;
-use serde::{Deserialize, Serialize};
 
-const INDEX_PATH: &str = "./.geet/index";
+const INDEX_PATH: &str = "./test/.geet/index";
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct IndexEntry {
@@ -60,6 +60,10 @@ impl Index {
         self.entries.clear();
         self.save()?;
         Ok(())
+    }
+
+    pub fn is_in_index(&self, path: &str) -> bool {
+        self.entries.contains_key(path)
     }
 }
 

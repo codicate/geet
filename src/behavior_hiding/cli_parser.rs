@@ -1,13 +1,13 @@
 /*B.2.1 CLI Parser (Angie)*/
 
-use clap::{Parser, Subcommand};
-use std::fmt;
 use crate::behavior_hiding::file_system_commands::{FileSystemCommands, RepositoryCommand};
 use crate::behavior_hiding::output_formatting::{FormatStyle, OutputFormatter};
 use crate::behavior_hiding::status_command::{
     RepoOptions, RepositoryCommands, RevisionAction, RevisionOptions,
 };
 use crate::repo_hiding::operation::branch::checkout_commit;
+use clap::{Parser, Subcommand};
+use std::fmt;
 
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
@@ -33,7 +33,7 @@ impl fmt::Display for DVCSCommands {
 pub enum DVCSCommands {
     Init {
         name: String,
-        #[arg(short, long, default_value = ".")]
+        #[arg(short, long, default_value = "./test")]
         path: String,
         #[arg(long, default_value = "main")]
         default_branch: String,
@@ -71,7 +71,9 @@ impl CLI {
                 CommandError::ParseError(err.to_string())
             }
         })?;
-        cli.command.ok_or(CommandError::InvalidCommand("No command provided.".to_string()))    
+        cli.command.ok_or(CommandError::InvalidCommand(
+            "No command provided.".to_string(),
+        ))
     }
 
     pub fn run() {
@@ -79,47 +81,50 @@ impl CLI {
         let formatter = OutputFormatter::new(FormatStyle::Colored);
 
         let cwd = std::env::current_dir()
-                    .unwrap()
-                    .to_str()
-                    .unwrap()
-                    .to_string();
-                //Dummy variables
-                let repo_options = RepoOptions {
-                    path: Some(cwd),
-                    current_branch: Some("main".to_string()),
-                };
-                let revision_options = RevisionOptions::default();
+            .unwrap()
+            .to_str()
+            .unwrap()
+            .to_string();
+        //Dummy variables
+        let repo_options = RepoOptions {
+            path: Some(cwd),
+            current_branch: Some("main".to_string()),
+        };
+        let revision_options = RevisionOptions::default();
 
-                let fs_commands = FileSystemCommands {};
-                let repo_commands = RepositoryCommands {
-                    repo_options,
-                    revision_options,
-                };
+        let fs_commands = FileSystemCommands {};
+        let repo_commands = RepositoryCommands {
+            repo_options,
+            revision_options,
+        };
 
-        let command = match CLI::parse_command(&input){
+        let command = match CLI::parse_command(&input) {
             Ok(cmd) => cmd,
             Err(e) => {
                 match e {
-                    CommandError::InvalidCommand(msg) => formatter.display_syntax_error(&format!(
-                        "Invalid Command {}", msg
-                    )),
-                    CommandError::ParseError(msg) => formatter.display_syntax_error(&format!(
-                        "Parse Error {}", msg
-                    )),
+                    CommandError::InvalidCommand(msg) => {
+                        formatter.display_syntax_error(&format!("Invalid Command {}", msg))
+                    }
+                    CommandError::ParseError(msg) => {
+                        formatter.display_syntax_error(&format!("Parse Error {}", msg))
+                    }
                 }
                 std::process::exit(1);
             }
         };
 
         let result = match &command {
-            DVCSCommands::Init { name, path, default_branch } => fs_commands.init_repository(name.clone(), path.clone(), default_branch.clone()),
+            DVCSCommands::Init {
+                name,
+                path,
+                default_branch,
+            } => fs_commands.init_repository(name.clone(), path.clone(), default_branch.clone()),
 
             DVCSCommands::Add { path } => fs_commands.add_file(&path),
 
             // DVCSCommands::Commit { message, author } => repo_commands.commit_action(&message, &author),
 
             // DVCSCommands::Cleanup {} => cleanup_helper(),
-
             DVCSCommands::Status {} => {
                 let files = fs_commands.get_status().unwrap_or_default();
                 status_helper(files, &formatter);
@@ -134,7 +139,6 @@ impl CLI {
             Ok(_) => formatter.display_command_execution_status(true, &command.to_string()),
             Err(e) => formatter.display_syntax_error(&format!("Error executing command: {:?}", e)),
         }
-        
     }
 }
 
