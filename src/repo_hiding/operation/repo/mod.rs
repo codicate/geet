@@ -22,48 +22,42 @@ impl fmt::Display for RepoError {
     }
 }
 
-impl RepositoryConfig {
-    // Initializes a new repository configuration and prints it to the command aline
-    pub fn init_repo(
-        name: String,
-        path: String,
-        default_branch: String,
-    ) -> Result<Self, RepoError> {
-        // Ensure the directory exists or create it
-        if !Path::new(&path).exists() {
-            fs::create_dir_all(&path).map_err(|e| {
-                RepoError::InitializationFailed(format!("Failed to create directory: {}", e))
-            })?;
-        }
+// Initializes a new repository configuration and prints it to the command aline
+pub fn init_repo(name: &String, default_branch: &String) -> Result<(), String> {
+    let path = "./test"; // TODO: change this to "." for production
 
-        // create .geet directory
-        let refs_path = format!("{}/.geet/refs", path);
-        fs::create_dir_all(&refs_path).unwrap();
-        let objects_path = format!("{}/.geet/objects", path);
-        fs::create_dir_all(&objects_path).unwrap();
-        // create the index file
-        File::create(format!("{}/.geet/index", path)).unwrap();
-
-        // Create the HEAD reference
-        create_head();
-
-        //Create the default branch reference using `create_ref`
-        //Here, None is passed for the hash since no commits exist yet
-        let branch_ref = create_ref(RefType::Branch, default_branch.clone(), None);
-
-        // Create the RepositoryConfig instance
-        let config = RepositoryConfig {
-            name: name.clone(),
-            default_branch: default_branch.clone(),
-        };
-
-        // Serialize the config to JSON format
-        let serialized_config = config.serialize();
-
-        // Print the serialized JSON to the command line
-        println!("Repository configuration initialized:");
-        println!("{}", serialized_config);
-
-        Ok(config)
+    // Ensure the directory is not already initialized
+    if Path::new(&format!("{}/.geet", path)).exists() {
+        return Err("Repository already initialized".to_string());
     }
+
+    // create .geet directory
+    let refs_path = format!("{}/.geet/refs", path);
+    fs::create_dir_all(&refs_path).unwrap();
+    let objects_path = format!("{}/.geet/objects", path);
+    fs::create_dir_all(&objects_path).unwrap();
+    // create the index file
+    File::create(format!("{}/.geet/index", path)).unwrap();
+
+    // Create the HEAD reference
+    create_head();
+
+    //Create the default branch reference using `create_ref`
+    //Here, None is passed for the hash since no commits exist yet
+    let branch_ref = create_ref(RefType::Branch, default_branch.clone(), None);
+
+    // Create the RepositoryConfig instance
+    let config = RepositoryConfig {
+        name: name.clone(),
+        default_branch: default_branch.clone(),
+    };
+
+    // Serialize the config to JSON format
+    let serialized_config = config.serialize();
+
+    // Print the serialized JSON to the command line
+    println!("Repository configuration initialized:");
+    println!("{}", serialized_config);
+
+    Ok(())
 }

@@ -1,9 +1,12 @@
 use chrono::Utc;
 
-use crate::repo_hiding::{data_type::CommitMetadata, operation::revision::create_revision};
+use crate::repo_hiding::{
+    data_type::CommitMetadata,
+    operation::{repo::init_repo, revision::create_revision},
+};
 
 pub fn init() -> Result<(), String> {
-    println!("Initializing repository...");
+    init_repo(&"default".to_string(), &"main".to_string())?;
     Ok(())
 }
 
@@ -64,7 +67,8 @@ pub fn commit(message: &String, author: &String) -> Result<(), String> {
         timestamp: Utc::now().to_rfc3339(),
     };
 
-    create_revision(metadata)?;
+    let commit_id = create_revision(metadata)?;
+    println!("Files committed successfully with Commit ID: {}", commit_id);
     Ok(())
 }
 

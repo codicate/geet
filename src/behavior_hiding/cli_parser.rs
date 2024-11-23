@@ -121,9 +121,9 @@ pub fn parse_input() {
     let command_str = format!("{:?}", command);
     let result = execute_command(&command);
 
-    match result {
-        Ok(_) => formatter.display_command_execution_status(true, &command_str),
-        Err(e) => formatter.display_syntax_error(&format!("Error executing command: {:?}", e)),
+    if result.is_err() {
+        formatter.display_syntax_error(&format!("Error executing command: {}", command_str));
+        println!("Error: {}", result.unwrap_err());
     };
 }
 
