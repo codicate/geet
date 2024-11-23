@@ -7,7 +7,7 @@ use cwd::{read_cwd, update_cwd};
 use crate::file_hiding::index::clear_index;
 
 // create a new revision with the given metadata
-pub fn create_revision(metadata: CommitMetadata) -> Hash {
+pub fn create_revision(metadata: CommitMetadata) -> Result<Hash, String> {
     // create a new commit object
     let tree_hash = read_cwd();
     let parent_hash = get_head();
@@ -19,11 +19,11 @@ pub fn create_revision(metadata: CommitMetadata) -> Hash {
 
     // update HEAD
     update_head(&commit_hash);
-    
+
     // Clear the index after successful commit
     clear_index().unwrap_or_else(|e| eprintln!("Warning: Failed to clear index: {}", e));
 
-    commit_hash
+    Ok(commit_hash)
 }
 
 // get the revision with the given hash

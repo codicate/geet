@@ -32,7 +32,7 @@ impl OutputFormatter {
         println!("{}", formatted_message); // Displaying result message to stdout
     }
 
-    pub fn display_command_execution_status(&self, success: bool, command: &str) {
+    pub fn display_command_execution_status(&self, success: bool, command: &String) {
         let message = if success {
             format!("Command '{}' executed successfully.", command)
         } else {

@@ -1,11 +1,7 @@
 /*B.2.1 CLI Parser (Angie)*/
 
-use crate::behavior_hiding::file_system_commands::{FileSystemCommands, RepositoryCommand};
+use super::command_handler;
 use crate::behavior_hiding::output_formatting::{FormatStyle, OutputFormatter};
-use crate::behavior_hiding::status_command::{
-    RepoOptions, RepositoryCommands, RevisionAction, RevisionOptions,
-};
-use crate::repo_hiding::operation::branch::checkout_commit;
 use clap::{Parser, Subcommand};
 use std::fmt;
 
@@ -13,137 +9,148 @@ use std::fmt;
 #[command(version, about, long_about = None)]
 pub struct CLI {
     #[command(subcommand)]
-    command: Option<DVCSCommands>,
+    command: Option<Commands>,
 }
 
-impl fmt::Display for DVCSCommands {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            DVCSCommands::Init { .. } => write!(f, "Init"),
-            DVCSCommands::Add { .. } => write!(f, "Add"),
-            DVCSCommands::Commit { .. } => write!(f, "Commit"),
-            DVCSCommands::Checkout { .. } => write!(f, "Checkout"),
-            DVCSCommands::Status { .. } => write!(f, "Status"),
-            DVCSCommands::Cleanup { .. } => write!(f, "Cleanup"),
-        }
-    }
-}
+#[derive(Subcommand, Debug)]
+enum Commands {
+    /// Create an empty Git repository or reinitialize an existing one
+    Init {},
 
-#[derive(Subcommand)]
-pub enum DVCSCommands {
-    Init {
-        name: String,
-        #[arg(short, long, default_value = "./test")]
-        path: String,
-        #[arg(long, default_value = "main")]
-        default_branch: String,
+    /// Clone a repository from a remote location to a local path
+    Clone {
+        /// Path to the remote repository to clone
+        repo_path: String,
     },
+
+    /// Pull changes from the remote repository and merge them into the current branch
+    Pull {
+        /// Path to the remote repository to pull from
+        repo_path: String,
+    },
+
+    /// Push local changes to the remote repository
+    Push {
+        /// Path to the remote repository to push to
+        repo_path: String,
+    },
+
+    /// Add a file or files to the staging area
     Add {
-        path: String,
+        /// Path to the file to add
+        file_path: String,
     },
+
+    /// Remove a file from the staging area or the repository
+    Remove {
+        /// Path to the file to remove
+        file_path: String,
+    },
+
+    /// Show all open branch heads in the repository
+    Heads {},
+
+    /// Display the working tree and staging area status
+    Status {},
+
+    /// Show the commit logs of the repository
+    Log {},
+
+    /// Show the differences between two commits or a commit and the working directory
+    Diff {
+        /// Hash of the first commit
+        hash1: String,
+        /// Hash of the second commit
+        hash2: String,
+    },
+
+    /// Display the contents of a file at a specific commit
+    Cat {
+        /// Path to the file to display
+        file_path: String,
+    },
+
+    /// Create a new commit with a message and author
     Commit {
+        /// Commit message to include in the commit
         #[arg(short, long)]
         message: String,
+
+        /// Author of the commit; defaults to "Anonymous"
         #[arg(short, long, default_value = "Anonymous")]
         author: String,
     },
+
+    /// Switch branches or restore working tree files
     Checkout {
-        hash: String,
+        /// Branch name or commit hash to check out
+        str: String,
+
+        /// Flag to create a new branch named <BRANCHNAME>
+        #[arg(short, help = "Create a new branch named <BRANCHNAME>")]
+        branch: bool,
     },
-    Status {},
+
+    /// Merge the changes from another branch into the current branch
+    Merge {
+        /// Name of the branch to merge into the current branch
+        branch_name: String,
+    },
+
+    /// Clean up unnecessary files and optimize the repository TODO: remove from production
     Cleanup {},
 }
 
-pub enum CommandError {
-    InvalidCommand(String),
-    ParseError(String),
-}
-
-impl CLI {
-    /// Parses the command-line input and returns a DVCS command or an error.
-    pub fn parse_command(input: &[String]) -> Result<DVCSCommands, CommandError> {
-        let cli = CLI::try_parse_from(input).map_err(|err| {
-            if err.kind() == clap::error::ErrorKind::UnknownArgument
-                || err.kind() == clap::error::ErrorKind::InvalidSubcommand
-            {
-                CommandError::InvalidCommand(err.to_string())
-            } else {
-                CommandError::ParseError(err.to_string())
-            }
-        })?;
-        cli.command.ok_or(CommandError::InvalidCommand(
-            "No command provided.".to_string(),
-        ))
-    }
-
-    pub fn run() {
-        let input: Vec<String> = std::env::args().collect(); // Collect command line arguments
-        let formatter = OutputFormatter::new(FormatStyle::Colored);
-
-        let cwd = std::env::current_dir()
-            .unwrap()
-            .to_str()
-            .unwrap()
-            .to_string();
-        //Dummy variables
-        let repo_options = RepoOptions {
-            path: Some(cwd),
-            current_branch: Some("main".to_string()),
-        };
-        let revision_options = RevisionOptions::default();
-
-        let fs_commands = FileSystemCommands {};
-        let repo_commands = RepositoryCommands {
-            repo_options,
-            revision_options,
-        };
-
-        let command = match CLI::parse_command(&input) {
-            Ok(cmd) => cmd,
-            Err(e) => {
-                match e {
-                    CommandError::InvalidCommand(msg) => {
-                        formatter.display_syntax_error(&format!("Invalid Command {}", msg))
-                    }
-                    CommandError::ParseError(msg) => {
-                        formatter.display_syntax_error(&format!("Parse Error {}", msg))
-                    }
-                }
-                std::process::exit(1);
-            }
-        };
-
-        let result = match &command {
-            DVCSCommands::Init {
-                name,
-                path,
-                default_branch,
-            } => fs_commands.init_repository(name.clone(), path.clone(), default_branch.clone()),
-
-            DVCSCommands::Add { path } => fs_commands.add_file(&path),
-
-            // DVCSCommands::Commit { message, author } => repo_commands.commit_action(&message, &author),
-
-            // DVCSCommands::Cleanup {} => cleanup_helper(),
-            DVCSCommands::Status {} => {
-                let files = fs_commands.get_status().unwrap_or_default();
-                status_helper(files, &formatter);
-                Ok(())
-            }
-
-            // DVCSCommands::Checkout { hash } => checkout_helper(&hash),
-            _ => Ok(()),
-        };
-
-        match result {
-            Ok(_) => formatter.display_command_execution_status(true, &command.to_string()),
-            Err(e) => formatter.display_syntax_error(&format!("Error executing command: {:?}", e)),
+pub fn parse_input() {
+    let cli = match CLI::try_parse() {
+        Ok(cli) => cli,
+        Err(e) => {
+            e.print();
+            return;
         }
+    };
+
+    let formatter = OutputFormatter::new(FormatStyle::Colored);
+
+    if cli.command.is_none() {
+        println!("No command provided. Use -h to see usage.");
+        return;
+    }
+
+    let command = cli.command.unwrap();
+    let command_str = format!("{:?}", command);
+    let result = execute_command(&command);
+
+    match result {
+        Ok(_) => formatter.display_command_execution_status(true, &command_str),
+        Err(e) => formatter.display_syntax_error(&format!("Error executing command: {:?}", e)),
+    };
+}
+
+pub fn execute_command(command: &Commands) -> Result<(), String> {
+    let formatter = OutputFormatter::new(FormatStyle::Colored);
+
+    match command {
+        Commands::Init {} => command_handler::init(),
+        Commands::Clone { repo_path } => command_handler::clone(repo_path),
+        Commands::Pull { repo_path } => command_handler::pull(repo_path),
+        Commands::Push { repo_path } => command_handler::push(repo_path),
+        Commands::Add { file_path } => command_handler::add(file_path),
+        Commands::Remove { file_path } => command_handler::remove(file_path),
+        Commands::Heads {} => command_handler::heads(),
+        Commands::Status {} => command_handler::status(),
+        Commands::Log {} => command_handler::log(),
+        Commands::Diff { hash1, hash2 } => command_handler::diff(hash1, hash2),
+        Commands::Cat { file_path } => command_handler::cat(file_path),
+        Commands::Commit { message, author } => command_handler::commit(message, author),
+        Commands::Checkout { str, branch } => command_handler::checkout(str, branch),
+        Commands::Merge { branch_name } => command_handler::merge(branch_name),
+        Commands::Cleanup {} => cleanup_helper(),
     }
 }
 
-fn cleanup_helper() -> std::io::Result<()> {
-    // This is a debug command to clean up the .geet directory
+// This is a debug command to clean up the .geet directory TODO: remove from production
+fn cleanup_helper() -> Result<(), String> {
     let path = std::env::current_dir().unwrap();
     let path = path.to_str().unwrap();
     let path = format!("{}/.geet", path);
@@ -151,19 +158,19 @@ fn cleanup_helper() -> std::io::Result<()> {
     Ok(())
 }
 
-fn checkout_helper(hash: &String) -> std::io::Result<()> {
-    checkout_commit(hash);
-    Ok(())
-}
+// fn checkout_helper(hash: &String) -> std::io::Result<()> {
+//     checkout_commit(hash);
+//     Ok(())
+// }
 
-fn status_helper(files: Vec<String>, formatter: &OutputFormatter) {
-    if files.is_empty() {
-        formatter.display_program_result("No files staged for commit");
-    } else {
-        let mut status = String::from("Changes to be committed:\n");
-        for file in files {
-            status.push_str(&format!("  new file: {}\n", file));
-        }
-        formatter.display_program_result(&status);
-    }
-}
+// fn status_helper(files: Vec<String>, formatter: &OutputFormatter) {
+//     if files.is_empty() {
+//         formatter.display_program_result("No files staged for commit");
+//     } else {
+//         let mut status = String::from("Changes to be committed:\n");
+//         for file in files {
+//             status.push_str(&format!("  new file: {}\n", file));
+//         }
+//         formatter.display_program_result(&status);
+//     }
+// }
