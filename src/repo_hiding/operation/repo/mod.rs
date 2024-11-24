@@ -1,13 +1,18 @@
+use serde::{Deserialize, Serialize};
+
+use crate::file_hiding::file_log::{deserialize_metadata,copy_dir};
 use crate::file_hiding::ref_log::store_ref;
 use crate::repo_hiding::data_type::RepositoryConfig;
 use crate::repo_hiding::data_type::{Hash, RefType};
 use crate::repo_hiding::operation::branch::{create_head, create_ref, update_head};
+use std::io;
 use std::fmt;
 use std::fs::{self, File};
 use std::io::Write;
 use std::path::Path;
 
-#[derive(Debug)]
+
+#[derive(Debug, Serialize, Deserialize)] 
 pub enum RepoError {
     InitializationFailed(String),
     SerializationError(String),
@@ -64,4 +69,66 @@ impl RepositoryConfig {
 
         Ok(config)
     }
+
+    pub fn validate_remote_repo(path: &str) -> std::io::Result<()> {
+        let geet_path = format!("{}/.geet", path);
+        if !Path::new(&geet_path).exists() {
+            Err(io::Error::new(
+                io::ErrorKind::NotFound,
+                "Invalid remote repository: .geet directory not found",
+            ))
+        } else {
+            Ok(())
+        }
+    }
+
+    fn copy_refs(remote_path: &str, local_path: &str)  -> std::io::Result<()> {
+        let remote_refs_path = format!("{}/.geet/refs", remote_path);
+        let local_refs_path = format!("{}/.geet/refs", local_path);
+        copy_dir(&remote_refs_path, &local_refs_path)
+    }
+
+    pub fn clone_repo(
+        remote_path: String,
+        local_path: String,
+    ) -> Result<(), RepoError> {
+        // Validate the remote repository
+        Self::validate_remote_repo(&remote_path).map_err(|e| {
+            RepoError::InitializationFailed(format!("Remote repository validation failed: {}", e))
+        })?;
+    
+        // Ensure the local path does not already exist
+        if Path::new(&local_path).exists() {
+            return Err(RepoError::InitializationFailed(
+                "The destination path already exists.".to_string(),
+            ));
+        }
+    
+        // Create the local repository structure
+        fs::create_dir_all(&local_path).map_err(|e| {
+            RepoError::InitializationFailed(format!("Failed to create directory: {}", e))
+        })?;
+    
+        // Copy the .geet directory
+        let remote_geet_path = format!("{}/.geet", remote_path);
+        let local_geet_path = format!("{}/.geet", local_path);
+        copy_dir(&remote_geet_path, &local_geet_path).map_err(|e| {
+            RepoError::InitializationFailed(format!("Failed to copy .geet directory: {}", e))
+        })?;
+    
+        // Copy references
+        Self::copy_refs(&remote_path, &local_path).map_err(|e| {
+            RepoError::InitializationFailed(format!("Failed to copy refs: {}", e))
+        })?;
+    
+        // Set up HEAD locally
+        let remote_head_path = format!("{}/.geet/HEAD", remote_path);
+        let local_head_path = format!("{}/.geet/HEAD", local_path);
+        fs::copy(&remote_head_path, &local_head_path).map_err(|e| {
+            RepoError::InitializationFailed(format!("Failed to copy HEAD reference: {}", e))
+        })?;
+    
+        println!("Repository successfully cloned to {}", local_path);
+        Ok(())
+    }  
 }
