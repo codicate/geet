@@ -34,6 +34,14 @@ impl RepositoryConfig {
         path: String,
         default_branch: String,
     ) -> Result<Self, RepoError> {
+        // Check if .geet directory already exists
+        let geet_path = format!("{}/.geet", path);
+        if Path::new(&geet_path).exists() {
+            return Err(RepoError::InitializationFailed(
+                "Repository already exists in this location".to_string(),
+            ));
+        }
+        
         // Ensure the directory exists or create it
         if !Path::new(&path).exists() {
             fs::create_dir_all(&path).map_err(|e| {
