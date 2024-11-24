@@ -80,9 +80,10 @@ pub fn update_head(new_hash: &Hash) {
 }
 
 // apply the changes from the revision to the working directory
-pub fn checkout_commit(commit_hash: &String) {
-    apply_revision(commit_hash);
+pub fn checkout_commit(commit_hash: &String) -> Result<(), String> {
+    apply_revision(commit_hash)?;
     update_head(commit_hash);
+    Ok(())
 }
 
 // checkout the given ref by calling update_head() and apply_revision()
@@ -112,12 +113,12 @@ pub fn list_refs(kind: RefType) -> Vec<Ref> {
 
 // list all commits of the given ref
 // count is optional. If it is None, all commits will be listed
-pub fn list_commits(ref_name: String, count: Option<i32>) -> Vec<Commit> {
+pub fn list_commits(ref_name: String, count: Option<i32>) -> Result<Vec<Commit>, String> {
     let mut current_commit_hash = get_ref(&ref_name).commit_hash.unwrap();
     let mut commit_list = Vec::new();
 
     for _ in 0..count.unwrap_or(i32::MAX) {
-        let commit = get_revision(&current_commit_hash);
+        let commit = get_revision(&current_commit_hash)?;
         commit_list.push(commit.clone());
         match commit.parent_hash {
             Some(hash) => current_commit_hash = hash,
@@ -125,7 +126,7 @@ pub fn list_commits(ref_name: String, count: Option<i32>) -> Vec<Commit> {
         }
     }
 
-    commit_list
+    Ok(commit_list)
 }
 
 #[test]

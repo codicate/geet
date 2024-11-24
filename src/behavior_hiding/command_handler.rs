@@ -96,7 +96,7 @@ pub fn checkout(str: &String, branch: &bool) -> Result<(), String> {
     // TODO: handle branches
     let hash = if does_object_exist(&str) { str } else { str };
 
-    checkout_commit(str);
+    checkout_commit(str)?;
     println!("Switched to commit {}", hash);
     Ok(())
 }

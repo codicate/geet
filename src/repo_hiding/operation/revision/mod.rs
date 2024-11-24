@@ -31,23 +31,25 @@ pub fn create_revision(metadata: CommitMetadata) -> Result<Hash, String> {
 }
 
 // get the revision with the given hash
-pub fn get_revision(commit_hash: &String) -> Commit {
-    let serialized = retrieve_object(&commit_hash).unwrap();
-    Commit::deserialize(&serialized)
+pub fn get_revision(commit_hash: &String) -> Result<Commit, String> {
+    let serialized = retrieve_object(&commit_hash)
+        .map_err(|_| format!("commit with hash {} not found", commit_hash))?;
+    Ok(Commit::deserialize(&serialized))
 }
 
 // get the parent that the revision is pointing to
-pub fn get_parent_revision(commit_hash: &String) -> Option<Commit> {
-    let commit = get_revision(commit_hash);
+pub fn get_parent_revision(commit_hash: &String) -> Result<Option<Commit>, String> {
+    let commit = get_revision(commit_hash)?;
     if let Some(parent_hash) = commit.parent_hash {
-        Some(get_revision(&parent_hash))
+        Ok(Some(get_revision(&parent_hash)?))
     } else {
-        None
+        Ok(None)
     }
 }
 
 // apply the changes from the revision to the working directory
-pub fn apply_revision(commit_hash: &String) {
-    let commit = get_revision(commit_hash);
+pub fn apply_revision(commit_hash: &String) -> Result<(), String> {
+    let commit = get_revision(commit_hash)?;
     update_cwd(&commit.tree_hash);
+    Ok(())
 }

@@ -80,6 +80,7 @@ fn delete_cwd(path: &str) -> Result<()> {
     for child in fs::read_dir(&path)? {
         let path = child?.path();
         let path_string = strip_path(&path);
+        println!("{}", path_string);
 
         // ignore the ./geet folder
         if path_string.starts_with(GEET_DIR) {
