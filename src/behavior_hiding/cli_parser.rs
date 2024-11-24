@@ -1,7 +1,10 @@
 /*B.2.1 CLI Parser (Angie)*/
 
 use super::command_handler;
-use crate::behavior_hiding::output_formatting::{FormatStyle, OutputFormatter};
+use crate::{
+    behavior_hiding::output_formatting::{FormatStyle, OutputFormatter},
+    GEET_DIR,
+};
 use clap::{Parser, Subcommand};
 use std::fmt;
 
@@ -151,10 +154,7 @@ pub fn execute_command(command: &Commands) -> Result<(), String> {
 
 // This is a debug command to clean up the .geet directory TODO: remove from production
 fn cleanup_helper() -> Result<(), String> {
-    let path = std::env::current_dir().unwrap();
-    let path = path.to_str().unwrap();
-    let path = format!("{}/.geet", path);
-    let _ = std::fs::remove_dir_all(path);
+    std::fs::remove_dir_all(GEET_DIR);
     Ok(())
 }
 

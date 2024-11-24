@@ -31,6 +31,8 @@ pub fn clear_index() -> std::io::Result<()> {
 
 fn is_file_changed(path: &Path) -> bool {
     let mut file = File::open(path).unwrap();
+    println!("{}", path.display());
+
     let mut content = String::new();
     file.read_to_string(&mut content).unwrap();
 
@@ -55,7 +57,8 @@ fn get_files_recursively(path: &Path) -> std::io::Result<Vec<PathBuf>> {
     }
 
     if path.is_file() && is_file_changed(path) {
-        files.push(path.to_path_buf());
+        let canonicalized_path = fs::canonicalize(path)?;
+        files.push(canonicalized_path);
     }
 
     Ok(files)
