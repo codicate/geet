@@ -96,6 +96,11 @@ pub fn contains(path: &Path) -> bool {
     index.contains(&path.to_path_buf())
 }
 
+pub fn is_stage_empty() -> bool {
+    let index = read_index().unwrap();
+    index.is_empty()
+}
+
 pub fn get_staged_files() -> Vec<PathBuf> {
     read_index().unwrap().into_iter().collect()
 }

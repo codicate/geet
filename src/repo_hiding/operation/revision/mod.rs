@@ -4,10 +4,14 @@ use crate::file_hiding::file_log::{retrieve_object, store_object};
 use crate::repo_hiding::data_type::{Commit, CommitMetadata, Hash};
 use cwd::{read_cwd, update_cwd};
 
-use crate::file_hiding::index::clear_index;
+use crate::file_hiding::index::{clear_index, get_staged_files, is_stage_empty};
 
 // create a new revision with the given metadata
 pub fn create_revision(metadata: CommitMetadata) -> Result<Hash, String> {
+    if is_stage_empty() {
+        return Err("No changes to commit".to_string());
+    }
+
     // create a new commit object
     let tree_hash = read_cwd();
     let parent_hash = get_head();
