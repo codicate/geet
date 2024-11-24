@@ -1,16 +1,16 @@
 use crate::file_hiding::file_log::{retrieve_object, store_object};
 use crate::file_hiding::index;
 use crate::repo_hiding::data_type::{Hash, Tree};
-use crate::BASE_DIR;
+use crate::{BASE_DIR, GEET_DIR};
 use std::fs;
 use std::io::{Result, Write};
 use std::path::PathBuf;
 
-pub fn read_cwd() -> Hash {
-    read_cwd_helper(BASE_DIR).unwrap()
+pub fn read_cwd() -> Option<Hash> {
+    read_cwd_helper(BASE_DIR).unwrap_or(None)
 }
 
-fn read_cwd_helper(path: &str) -> Result<String> {
+fn read_cwd_helper(path: &str) -> Result<Option<Hash>> {
     let children = fs::read_dir(path)?;
     let mut tree = Tree::new();
 
@@ -19,7 +19,7 @@ fn read_cwd_helper(path: &str) -> Result<String> {
         let path_string = strip_path(&path);
 
         // ignore the ./geet folder
-        if path_string.starts_with(".geet") {
+        if path_string.starts_with(GEET_DIR) {
             continue;
         }
 
@@ -29,18 +29,24 @@ fn read_cwd_helper(path: &str) -> Result<String> {
         }
 
         let hash = if path.is_dir() {
-            read_cwd_helper(&path_string).unwrap()
+            read_cwd_helper(&path_string)?
         } else {
-            store_file(&path_string)
+            Some(store_file(&path_string))
         };
 
-        let file_name = path.file_name().unwrap().to_str().unwrap();
-        tree.add_node(file_name.to_string(), hash, path.is_dir());
+        if let Some(hash) = hash {
+            let file_name = path.file_name().unwrap().to_str().unwrap();
+            tree.add_node(file_name.to_string(), hash, path.is_dir());
+        }
     }
 
-    let serialized = tree.serialize();
-    let hash = store_object(&serialized).unwrap();
-    Ok(hash)
+    if tree.nodes.is_empty() {
+        Ok(None)
+    } else {
+        let serialized = tree.serialize();
+        let hash = store_object(&serialized)?;
+        Ok(Some(hash))
+    }
 }
 
 pub fn update_cwd(hash: &Hash) {
