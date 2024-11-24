@@ -41,11 +41,18 @@ pub fn remove(file_path: &str) -> Result<(), String> {
 }
 
 pub fn status() -> Result<(), String> {
-    println!("Staged files:");
+    // TODO - Implement this part
+    print!("On branch main\n\n");
+
+    println!("Changes to be committed:");
     let files = index::get_staged_files();
-    for file in files {
-        println!("{}", file);
-    }
+    files.iter().for_each(|file| println!("{:?}", file));
+    println!();
+
+    println!("Changes not staged for commit:");
+    let files = index::get_unstaged_files();
+    files.iter().for_each(|file| println!("{:?}", file));
+
     Ok(())
 }
 

@@ -1,4 +1,4 @@
-use crate::{INDEX_FILE, OBJECTS_DIR};
+use crate::{BASE_DIR, GEET_DIR, INDEX_FILE, OBJECTS_DIR};
 use core::hash;
 use serde_json::{self, Value};
 use std::collections::HashSet;
@@ -36,11 +36,16 @@ fn is_file_changed(path: &Path) -> bool {
 
     let hash = hash_object(&content);
     let object_path = format!("{}/{}", OBJECTS_DIR, hash);
-    let path = Path::new(path);
+    let path = Path::new(object_path.as_str());
     return !path.exists();
 }
 
 fn get_files_recursively(path: &Path) -> std::io::Result<Vec<PathBuf>> {
+    // Skip the geet directory
+    if path.starts_with(GEET_DIR) {
+        return Ok(Vec::new());
+    }
+
     let mut files = Vec::new();
     if path.is_dir() {
         for entry in fs::read_dir(path)? {
@@ -49,7 +54,7 @@ fn get_files_recursively(path: &Path) -> std::io::Result<Vec<PathBuf>> {
         }
     }
 
-    if !is_file_changed(path) {
+    if path.is_file() && is_file_changed(path) {
         files.push(path.to_path_buf());
     }
 
@@ -91,10 +96,16 @@ pub fn contains(path: &Path) -> bool {
     index.contains(&path.to_path_buf())
 }
 
-pub fn get_staged_files() -> Vec<String> {
-    let index = read_index().unwrap();
-    index
-        .iter()
-        .map(|p| p.to_string_lossy().to_string())
+pub fn get_staged_files() -> Vec<PathBuf> {
+    read_index().unwrap().into_iter().collect()
+}
+
+pub fn get_unstaged_files() -> Vec<PathBuf> {
+    let staged_files = get_staged_files();
+    let path = Path::new(BASE_DIR);
+    get_files_recursively(path)
+        .unwrap()
+        .into_iter()
+        .filter(|f| !staged_files.contains(f))
         .collect()
 }
