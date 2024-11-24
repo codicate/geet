@@ -90,7 +90,12 @@ pub fn remove(path: &str) -> Result<(), String> {
     Ok(())
 }
 
+// return true if file is not changed, or if the file is changed and staged
 pub fn contains(path: &Path) -> bool {
+    if !is_file_changed(path) {
+        return true;
+    }
+
     let index = read_index().unwrap();
     index.contains(&path.to_path_buf())
 }

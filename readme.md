@@ -12,6 +12,7 @@ cargo run -- init test
 ```
 
 to add (stage) the file
+
 ```
 cargo run -- add test.txt
 ```
@@ -47,3 +48,8 @@ cargo run -- cleanup
 - refactor cli parser error handling using ?
 - refactor command handling code to be a group of helper functions, no more enums
 - when we make a new commit, we only change HEAD to point to it. We need to make the current branch to point to it as well
+
+# known bugs
+
+- add/remove treats path with "./" prefix as unique from the same path without it
+- status command treats empty files the same, because empty content gets hashed to the same value
