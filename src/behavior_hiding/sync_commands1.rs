@@ -1,4 +1,4 @@
-use crate::repo_hiding::operation::repo::{pull_repo, push_repo};
+use crate::repo_hiding::data_type::RepositoryConfig;
 
 
 /// Represents options related to the repository
@@ -78,7 +78,7 @@ pub fn push_action(&self, local_path: &str, remote_path: &str) -> Result<SyncRes
     
         match action {
             SyncAction::Push => {
-                push_repo(local_path.clone(), remote_path.clone()).map_err(|e| {
+                RepositoryConfig::push_repo(local_path.clone(), remote_path.clone()).map_err(|e| {
                     format!("Failed to push changes: {}", e)
                 })?;
                 Ok(SyncResult::SyncSuccess {
@@ -86,7 +86,7 @@ pub fn push_action(&self, local_path: &str, remote_path: &str) -> Result<SyncRes
                 })
             }
             SyncAction::Pull => {
-                pull_repo(remote_path.clone(), local_path.clone()).map_err(|e| {
+                RepositoryConfig::pull_repo(remote_path.clone(), local_path.clone()).map_err(|e| {
                     format!("Failed to pull changes: {}", e)
                 })?;
                 Ok(SyncResult::SyncSuccess {
@@ -117,23 +117,23 @@ pub fn push_action(&self, local_path: &str, remote_path: &str) -> Result<SyncRes
     }
 }
 
-fn main() {
-    let repo_cmd = RepositoryCommands;
+// fn main() {
+//     let repo_cmd = RepositoryCommands;
 
-    // Define the local and remote repository paths
-    let local_repo_path = "path/to/local/repo";
-    let remote_repo_path = "path/to/remote/repo";
+//     // Define the local and remote repository paths
+//     let local_repo_path = "path/to/local/repo";
+//     let remote_repo_path = "path/to/remote/repo";
 
-    // Sync Pull
-    match repo_cmd.pull_action(local_repo_path, remote_repo_path) {
-        Ok(result) => println!("Pull Success: {:?}", result),
-        Err(err) => eprintln!("Pull Failed: {}", err),
-    }
+//     // Sync Pull
+//     match repo_cmd.pull_action(local_repo_path, remote_repo_path) {
+//         Ok(result) => println!("Pull Success: {:?}", result),
+//         Err(err) => eprintln!("Pull Failed: {}", err),
+//     }
 
-    // Sync Push
-    match repo_cmd.push_action(local_repo_path, remote_repo_path) {
-        Ok(result) => println!("Push Success: {:?}", result),
-        Err(err) => eprintln!("Push Failed: {}", err),
-    }
-}
+//     // Sync Push
+//     match repo_cmd.push_action(local_repo_path, remote_repo_path) {
+//         Ok(result) => println!("Push Success: {:?}", result),
+//         Err(err) => eprintln!("Push Failed: {}", err),
+//     }
+// }
 

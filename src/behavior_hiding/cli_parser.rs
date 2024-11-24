@@ -5,6 +5,9 @@ use crate::behavior_hiding::output_formatting::{FormatStyle, OutputFormatter};
 use crate::behavior_hiding::status_command::{
     RepoOptions, RepositoryCommands, RevisionAction, RevisionOptions,
 };
+use crate::behavior_hiding::sync_commands1::{
+    RepoOptions as RepositorySyncOptions, RepositoryCommands as RepositorySyncCommands, RevisionOptions as RevisionSyncOptions,SyncAction, SyncResult
+};
 use crate::repo_hiding::operation::branch::checkout_commit;
 use clap::{Parser, Subcommand};
 use std::fmt;
@@ -26,6 +29,9 @@ impl fmt::Display for DVCSCommands {
             DVCSCommands::Status { .. } => write!(f, "Status"),
             DVCSCommands::Cleanup { .. } => write!(f, "Cleanup"),
             DVCSCommands::Clone { .. } => write!(f, "Clone"),
+            DVCSCommands::Pull { .. } => write!(f, "Pull"),
+            DVCSCommands::Push { .. } => write!(f, "Push"),
+            DVCSCommands::Merge { .. } => write!(f, "Merge"),
         }
     }
 }
@@ -57,6 +63,15 @@ pub enum DVCSCommands {
         #[arg(short, long, default_value = "./test")]
         local_path: String,
     },
+    Pull {
+        #[arg(short, long)]
+        remote_path: String,
+    },
+    Push {
+        #[arg(short, long)]
+        remote_path: String,
+    },
+    Merge {},
     Status {},
     Cleanup {},
 }
@@ -94,7 +109,7 @@ impl CLI {
             .to_string();
         //Dummy variables
         let repo_options = RepoOptions {
-            path: Some(cwd),
+            path: Some(cwd.clone()),
             current_branch: Some("main".to_string()),
         };
         let revision_options = RevisionOptions::default();
@@ -104,6 +119,7 @@ impl CLI {
             repo_options,
             revision_options,
         };
+        let sync_commands = RepositorySyncCommands{};
 
         let command = match CLI::parse_command(&input) {
             Ok(cmd) => cmd,
@@ -152,6 +168,9 @@ impl CLI {
             DVCSCommands::Checkout { hash } => checkout_helper(&hash)
                 .map_err(|e| e.to_string()),
 
+            DVCSCommands::Pull { remote_path } => sync_commands.pull_action(&cwd.clone(), remote_path).map(|_| ()), //Convert Result<> type
+
+            DVCSCommands::Push { remote_path } => sync_commands.push_action(&cwd.clone(), remote_path).map(|_| ()),
             _ => Ok(()),
         };
 
