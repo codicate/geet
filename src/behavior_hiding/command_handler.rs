@@ -64,8 +64,10 @@ pub fn status() -> Result<(), String> {
 }
 
 pub fn heads() -> Result<(), String> {
-    let ref_list = list_refs(RefType::Head);
-    println!("{:#?}", ref_list);
+    let ref_list = list_refs(RefType::Branch)?;
+    for _ref in ref_list {
+        println!("{}", _ref.name);
+    }
     Ok(())
 }
 
