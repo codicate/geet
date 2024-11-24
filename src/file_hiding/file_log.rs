@@ -46,6 +46,12 @@ pub fn retrieve_object(hash: &String) -> Result<String> {
     Ok(data)
 }
 
+pub fn does_object_exist(hash: &String) -> bool {
+    let object_path = format!("{}/{}", OBJECTS_DIR, hash);
+    let path = Path::new(object_path.as_str());
+    return path.exists();
+}
+
 // Store a file and add it to the index
 // pub fn store_file(path: &str) -> Result<String> {
 //     let data = fs::read_to_string(path)?;

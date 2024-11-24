@@ -1,10 +1,10 @@
 use chrono::Utc;
 
 use crate::{
-    file_hiding::index,
+    file_hiding::{file_log::does_object_exist, index},
     repo_hiding::{
         data_type::CommitMetadata,
-        operation::{repo::init_repo, revision::create_revision},
+        operation::{branch::checkout_commit, repo::init_repo, revision::create_revision},
     },
 };
 
@@ -88,12 +88,16 @@ pub fn commit(message: &String, author: &String) -> Result<(), String> {
     Ok(())
 }
 
-pub fn checkout(str: &str, branch: &bool) -> Result<(), String> {
+pub fn checkout(str: &String, branch: &bool) -> Result<(), String> {
     if *branch {
         println!("Creating and switching to new branch '{}'...", str);
-    } else {
-        println!("Checking out '{}'...", str);
     }
+
+    // TODO: handle branches
+    let hash = if does_object_exist(&str) { str } else { str };
+
+    checkout_commit(str);
+    println!("Switched to commit {}", hash);
     Ok(())
 }
 

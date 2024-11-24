@@ -6,7 +6,7 @@ use std::fs::{self, File};
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 
-use super::file_log::hash_object;
+use super::file_log::{does_object_exist, hash_object};
 
 fn read_index() -> std::io::Result<HashSet<PathBuf>> {
     let mut file = File::open(INDEX_FILE)?;
@@ -36,9 +36,7 @@ fn is_file_changed(path: &Path) -> bool {
     file.read_to_string(&mut content).unwrap();
 
     let hash = hash_object(&content);
-    let object_path = format!("{}/{}", OBJECTS_DIR, hash);
-    let path = Path::new(object_path.as_str());
-    return !path.exists();
+    return !does_object_exist(&hash);
 }
 
 fn get_files_recursively(path: &Path) -> std::io::Result<Vec<PathBuf>> {

@@ -1,6 +1,7 @@
 use super::revision::{apply_revision, get_revision};
 use crate::file_hiding::ref_log::{delete_ref as _delete_ref, retrieve_ref, store_ref};
 use crate::repo_hiding::data_type::{Commit, Hash, Ref, RefType};
+use crate::REFS_DIR;
 
 // create a new ref with the given name
 // hash is optional. If it is None, the ref will point to HEAD
@@ -93,7 +94,6 @@ pub fn checkout_ref(ref_name: &String) {
     checkout_commit(&hash);
 }
 
-const REFS_DIR: &str = "./test/.geet/refs";
 // list all refs of the given kind (Branch, Tag, or Head)
 pub fn list_refs(kind: RefType) -> Vec<Ref> {
     let mut ref_list = Vec::new();
