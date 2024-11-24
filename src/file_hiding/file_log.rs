@@ -7,19 +7,19 @@ use std::fs::{self, File};
 use std::io::{self, Read, Result, Write};
 use std::path::Path;
 
-pub fn store_object(data: &String) -> Result<String> {
-    // Generate SHA-1 hash
+pub fn hash_object(data: &String) -> String {
     let mut hasher = Sha1::new();
     hasher.update(data.as_bytes());
     let hash = hasher.finalize();
-    let hash_string = format!("{:x}", hash);
+    format!("{:x}", hash)
+}
 
-    // Directory structure based on the first two characters of the hash
-    let dir_path = format!("{}/{}", OBJECTS_DIR, &hash_string[..2]);
-    fs::create_dir_all(&dir_path)?;
+pub fn store_object(data: &String) -> Result<String> {
+    // Generate SHA-1 hash
+    let hash_string = hash_object(data);
 
     // Write data to a file named with its hash
-    let file_path = format!("{}/{}", dir_path, hash_string);
+    let file_path = format!("{}/{}", OBJECTS_DIR, hash_string);
     let mut file = File::create(&file_path)?;
     file.write_all(data.as_bytes())?;
 
@@ -34,8 +34,7 @@ pub fn retrieve_object(hash: &String) -> Result<String> {
         ));
     }
 
-    let dir_path = format!("{}/{}", OBJECTS_DIR, &hash[..2]);
-    let file_path = format!("{}/{}", dir_path, hash);
+    let file_path = format!("{}/{}", OBJECTS_DIR, hash);
 
     if !Path::new(&file_path).exists() {
         return Err(io::Error::new(io::ErrorKind::NotFound, "File not found"));
