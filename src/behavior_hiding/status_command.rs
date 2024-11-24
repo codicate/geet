@@ -107,17 +107,8 @@ impl RepositoryCommands {
         inspection_type: InspectionType,
     ) -> Result<InspectionResult, String> {
         match inspection_type {
-            InspectionType::Status => Ok(InspectionResult::FileStatus {
-                modified_files: vec!["file1.txt".to_string(), "file2.txt".to_string()],
-                untracked_files: vec!["newfile.txt".to_string()],
-            }),
-            InspectionType::Heads => {
-                let head_commit = get_head().unwrap_or_default();
-                Ok(InspectionResult::HeadStatus {
-                    branches: vec!["main".to_string(), "feature-branch".to_string()],
-                    head_commit: head_commit.to_string(),
-                })
-            }
+            InspectionType::Status => todo!(),
+            InspectionType::Heads => todo!(),
         }
     }
 
