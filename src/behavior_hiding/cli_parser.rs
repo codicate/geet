@@ -25,6 +25,7 @@ impl fmt::Display for DVCSCommands {
             DVCSCommands::Checkout { .. } => write!(f, "Checkout"),
             DVCSCommands::Status { .. } => write!(f, "Status"),
             DVCSCommands::Cleanup { .. } => write!(f, "Cleanup"),
+            DVCSCommands::Clone { .. } => write!(f, "Clone"),
         }
     }
 }
@@ -49,6 +50,12 @@ pub enum DVCSCommands {
     },
     Checkout {
         hash: String,
+    },
+    Clone {
+        #[arg(short, long, default_value = "./test_repo")]
+        remote_path: String,
+        #[arg(short, long, default_value = "./test")]
+        local_path: String,
     },
     Status {},
     Cleanup {},
@@ -138,7 +145,10 @@ impl CLI {
                 Ok(())
             }
 
-            // DVCSCommands::Checkout { hash } => checkout_helper(&hash),
+            DVCSCommands::Clone { remote_path, local_path } => {
+                fs_commands.clone_repository(remote_path.to_string(), local_path.to_string())
+            }
+            
             DVCSCommands::Checkout { hash } => checkout_helper(&hash)
                 .map_err(|e| e.to_string()),
 
