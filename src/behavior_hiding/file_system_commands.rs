@@ -30,6 +30,10 @@ impl FileSystemCommands {
     }
 
     pub fn add_file(&self, path: &str) -> Result<(), String> {
+        // check if file exist first
+        if !Path::new(path).exists() {
+            return Err(format!("Error: file '{}' does not exist", path));
+        }
         add_to_index(path).map_err(|e| e.to_string())
     }
 
