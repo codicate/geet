@@ -46,6 +46,8 @@ impl RepositoryConfig {
         fs::create_dir_all(&refs_path).unwrap();
         let objects_path = format!("{}/.geet/objects", path);
         fs::create_dir_all(&objects_path).unwrap();
+        // create the index file
+        File::create(format!("{}/.geet/index", path)).unwrap();
 
         // Create the HEAD reference
         create_head();

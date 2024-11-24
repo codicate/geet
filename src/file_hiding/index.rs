@@ -1,11 +1,11 @@
 // src/file_hiding/index.rs
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs;
 use std::io::{self, Result};
 use std::path::Path;
-use serde::{Deserialize, Serialize};
 
-const INDEX_PATH: &str = "./.geet/index";
+const INDEX_PATH: &str = "./test/.geet/index";
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct IndexEntry {
@@ -54,6 +54,17 @@ impl Index {
             .map(|entry| entry.path.clone())
             .collect()
     }
+
+    // method to clear the index after commit
+    pub fn clear(&mut self) -> Result<()> {
+        self.entries.clear();
+        self.save()?;
+        Ok(())
+    }
+
+    pub fn is_in_index(&self, path: &str) -> bool {
+        self.entries.contains_key(path)
+    }
 }
 
 pub fn add_to_index(path: &str) -> Result<()> {
@@ -64,4 +75,10 @@ pub fn add_to_index(path: &str) -> Result<()> {
 pub fn get_staged_files() -> Vec<String> {
     let index = Index::new();
     index.get_staged_entries()
+}
+
+// New function to clear the index
+pub fn clear_index() -> Result<()> {
+    let mut index = Index::new();
+    index.clear()
 }
