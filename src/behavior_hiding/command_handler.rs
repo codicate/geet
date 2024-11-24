@@ -4,6 +4,7 @@ use crate::{
     file_hiding::{
         file_log::{does_object_exist, retrieve_object},
         index,
+        ref_log::Hash,
     },
     repo_hiding::{
         data_type::{CommitMetadata, RefType},
@@ -65,6 +66,7 @@ pub fn status() -> Result<(), String> {
 
 pub fn heads() -> Result<(), String> {
     let ref_list = list_refs(RefType::Branch)?;
+    println!("Active branches:");
     for _ref in ref_list {
         println!("{}", _ref.name);
     }
@@ -89,8 +91,10 @@ pub fn diff(hash1: &str, hash2: &str) -> Result<(), String> {
     Ok(())
 }
 
-pub fn cat(file_path: &str) -> Result<(), String> {
-    println!("Displaying contents of file {}...", file_path);
+pub fn cat(hash: &Hash) -> Result<(), String> {
+    let content =
+        retrieve_object(hash).map_err(|_| "Object with given hash not found".to_string())?;
+    println!("{}", content);
     Ok(())
 }
 
@@ -121,10 +125,5 @@ pub fn checkout(str: &String, branch: &bool) -> Result<(), String> {
 
 pub fn merge(branch_name: &str) -> Result<(), String> {
     println!("Merging branch '{}'...", branch_name);
-    Ok(())
-}
-
-pub fn cleanup() -> Result<(), String> {
-    println!("Cleaning up the repository...");
     Ok(())
 }

@@ -157,20 +157,3 @@ fn cleanup_helper() -> Result<(), String> {
     std::fs::remove_dir_all(GEET_DIR);
     Ok(())
 }
-
-// fn checkout_helper(hash: &String) -> std::io::Result<()> {
-//     checkout_commit(hash);
-//     Ok(())
-// }
-
-// fn status_helper(files: Vec<String>, formatter: &OutputFormatter) {
-//     if files.is_empty() {
-//         formatter.display_program_result("No files staged for commit");
-//     } else {
-//         let mut status = String::from("Changes to be committed:\n");
-//         for file in files {
-//             status.push_str(&format!("  new file: {}\n", file));
-//         }
-//         formatter.display_program_result(&status);
-//     }
-// }
