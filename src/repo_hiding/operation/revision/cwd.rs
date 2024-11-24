@@ -1,14 +1,13 @@
 use crate::file_hiding::file_log::{retrieve_object, store_object};
-use crate::file_hiding::index::Index;
+use crate::file_hiding::index;
 use crate::repo_hiding::data_type::{Hash, Tree};
+use crate::BASE_DIR;
 use std::fs;
 use std::io::{Result, Write};
 use std::path::PathBuf;
 
-const CWD: &str = "./";
-
 pub fn read_cwd() -> Hash {
-    read_cwd_helper(CWD).unwrap()
+    read_cwd_helper(BASE_DIR).unwrap()
 }
 
 fn read_cwd_helper(path: &str) -> Result<String> {
@@ -24,8 +23,8 @@ fn read_cwd_helper(path: &str) -> Result<String> {
             continue;
         }
 
-        let index = Index::new();
-        if path.is_file() && !index.is_in_index(path.to_str().unwrap()) {
+        // ignore files that are not in the index
+        if path.is_file() && !index::contains(&path) {
             continue;
         }
 
@@ -45,8 +44,8 @@ fn read_cwd_helper(path: &str) -> Result<String> {
 }
 
 pub fn update_cwd(hash: &Hash) {
-    delete_cwd(CWD).unwrap();
-    update_cwd_helper(CWD, hash).unwrap();
+    delete_cwd(BASE_DIR).unwrap();
+    update_cwd_helper(BASE_DIR, hash).unwrap();
 }
 
 fn update_cwd_helper(path: &str, hash: &Hash) -> Result<()> {
@@ -88,7 +87,7 @@ fn delete_cwd(path: &str) -> Result<()> {
         }
     }
 
-    if path != CWD {
+    if path != BASE_DIR {
         fs::remove_dir(path)?;
     }
     Ok(())
