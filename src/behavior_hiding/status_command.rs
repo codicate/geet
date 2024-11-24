@@ -55,14 +55,6 @@ pub enum RevisionResult {
     LogResult { history: Vec<String> },
 }
 
-#[derive(Debug)]
-pub enum StatusError {
-    InvalidCommand,
-    ActionFailed(String),
-}
-
-
-
 pub struct RepositoryCommands {
     pub repo_options: RepoOptions,
     pub revision_options: RevisionOptions,
@@ -73,7 +65,7 @@ impl RepositoryCommands {
         &self,
         commit_message: &str,
         author: &str,
-    ) -> Result<RevisionResult, StatusError> {
+    ) -> Result<RevisionResult, String> {
         let options = RevisionOptions {
             commit_message: Some(commit_message.to_string()),
             author: Some(author.to_string()),
@@ -85,7 +77,7 @@ impl RepositoryCommands {
         result
     }
 
-    pub fn checkout_action(&self, ref_name: &str) -> Result<RevisionResult, StatusError> {
+    pub fn checkout_action(&self, ref_name: &str) -> Result<RevisionResult, String> {
         let options = RevisionOptions {
             commit_message: None,
             author: None,
@@ -95,7 +87,7 @@ impl RepositoryCommands {
         self.manage_revisions(options, RevisionAction::Checkout)
     }
 
-    pub fn log_action(&self, ref_name: Option<String>, count: Option<i32>) -> Result<RevisionResult, StatusError> {
+    pub fn log_action(&self, ref_name: Option<String>, count: Option<i32>) -> Result<RevisionResult, String> {
         // Prepare the RevisionOptions with ref_name and count
         let options = RevisionOptions {
             commit_message: None, 
@@ -113,7 +105,7 @@ impl RepositoryCommands {
         &self,
         _options: RepoOptions,
         inspection_type: InspectionType,
-    ) -> Result<InspectionResult, StatusError> {
+    ) -> Result<InspectionResult, String> {
         match inspection_type {
             InspectionType::Status => Ok(InspectionResult::FileStatus {
                 modified_files: vec!["file1.txt".to_string(), "file2.txt".to_string()],
@@ -133,13 +125,11 @@ impl RepositoryCommands {
         &self,
         options: RevisionOptions,
         revision_action: RevisionAction,
-    ) -> Result<RevisionResult, StatusError> {
+    ) -> Result<RevisionResult, String> {
         let repo_path = match &self.repo_options.path {
             Some(path) => path,
             None => {
-                return Err(StatusError::ActionFailed(
-                    "Repository path not set".to_string(),
-                ))
+                return Err("Repository path not set".to_string());
             }
         };
         match revision_action {
@@ -152,7 +142,7 @@ impl RepositoryCommands {
                     })
                 } else {
                     // If no ref_name is provided, it might be an error
-                    Err(StatusError::ActionFailed("Reference name is required".to_string()))
+                Err("Reference name is required".to_string())
                 }
             },
             RevisionAction::Diff => todo!(),
@@ -178,8 +168,7 @@ impl RepositoryCommands {
 
                 // Return the result as a LogResult
                 Ok(RevisionResult::LogResult { history: commit_history })
-            }
-            _ => Err(StatusError::InvalidCommand),
+            },
     
             RevisionAction::Commit => {
                 println!(
@@ -205,7 +194,7 @@ impl RepositoryCommands {
                 println!("Files committed successfully with Commit ID: {}", commit_id);
                 Ok(RevisionResult::CommitResult { commit_id })
             }
-            _ => Err(StatusError::InvalidCommand),
+            _ => Err("Invalid command provided.".to_string()), // For unsupported actions
         }
     }
 }
