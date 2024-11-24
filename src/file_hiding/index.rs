@@ -10,15 +10,20 @@ fn read_index() -> std::io::Result<HashSet<PathBuf>> {
     let mut content = String::new();
     file.read_to_string(&mut content)?;
 
-    let paths: HashSet<PathBuf> = serde_json::from_str(&content)?;
+    let paths: HashSet<PathBuf> = serde_json::from_str(&content).unwrap_or_default();
     Ok(paths)
 }
 
 fn write_index(paths: &HashSet<PathBuf>) -> std::io::Result<()> {
     let serialized = serde_json::to_string(paths)?;
-    let mut file = File::open(INDEX_FILE)?;
+    let mut file = File::create(INDEX_FILE)?;
     file.write_all(serialized.as_bytes())?;
     Ok(())
+}
+
+pub fn clear_index() -> std::io::Result<()> {
+    let index = HashSet::new();
+    write_index(&index)
 }
 
 fn get_files_recursively(path: &Path) -> std::io::Result<Vec<PathBuf>> {

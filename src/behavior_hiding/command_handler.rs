@@ -1,8 +1,11 @@
 use chrono::Utc;
 
-use crate::repo_hiding::{
-    data_type::CommitMetadata,
-    operation::{repo::init_repo, revision::create_revision},
+use crate::{
+    file_hiding::index,
+    repo_hiding::{
+        data_type::CommitMetadata,
+        operation::{repo::init_repo, revision::create_revision},
+    },
 };
 
 pub fn init() -> Result<(), String> {
@@ -26,22 +29,28 @@ pub fn push(repo_path: &str) -> Result<(), String> {
 }
 
 pub fn add(file_path: &str) -> Result<(), String> {
-    println!("Adding file {}...", file_path);
+    index::add(file_path)?;
+    println!("Added file {} to staging area.", file_path);
     Ok(())
 }
 
 pub fn remove(file_path: &str) -> Result<(), String> {
-    println!("Removing file {}...", file_path);
+    index::remove(file_path)?;
+    println!("Removed file {} from staging area.", file_path);
+    Ok(())
+}
+
+pub fn status() -> Result<(), String> {
+    println!("Staged files:");
+    let files = index::get_staged_files();
+    for file in files {
+        println!("{}", file);
+    }
     Ok(())
 }
 
 pub fn heads() -> Result<(), String> {
     println!("Listing branch heads...");
-    Ok(())
-}
-
-pub fn status() -> Result<(), String> {
-    println!("Checking repository status...");
     Ok(())
 }
 
