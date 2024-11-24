@@ -123,8 +123,15 @@ impl CLI {
             DVCSCommands::Add { path } => fs_commands.add_file(&path),
 
             // DVCSCommands::Commit { message, author } => repo_commands.commit_action(&message, &author),
+            DVCSCommands::Commit { message, author } => {
+                repo_commands.commit_action(&message, &author)
+                    .map(|_| ()) // Convert the Result<RevisionResult, String> to Result<(), String>
+            },
 
             // DVCSCommands::Cleanup {} => cleanup_helper(),
+            DVCSCommands::Cleanup {} => cleanup_helper()
+                .map_err(|e| e.to_string()),
+
             DVCSCommands::Status {} => {
                 let files = fs_commands.get_status().unwrap_or_default();
                 status_helper(files, &formatter);
@@ -132,6 +139,9 @@ impl CLI {
             }
 
             // DVCSCommands::Checkout { hash } => checkout_helper(&hash),
+            DVCSCommands::Checkout { hash } => checkout_helper(&hash)
+                .map_err(|e| e.to_string()),
+
             _ => Ok(()),
         };
 
