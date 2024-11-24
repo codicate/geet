@@ -14,7 +14,7 @@ pub fn create_revision(metadata: CommitMetadata) -> Result<Hash, String> {
 
     // create a new commit object
     let tree_hash = read_cwd().ok_or_else(|| "No changes to commit".to_string())?;
-    let parent_hash = get_head();
+    let parent_hash = get_head()?;
     let commit = Commit::new_commit(tree_hash, parent_hash, metadata);
 
     // store the commit object

@@ -1,10 +1,17 @@
 use chrono::Utc;
 
 use crate::{
-    file_hiding::{file_log::does_object_exist, index},
+    file_hiding::{
+        file_log::{does_object_exist, retrieve_object},
+        index,
+    },
     repo_hiding::{
-        data_type::CommitMetadata,
-        operation::{branch::checkout_commit, repo::init_repo, revision::create_revision},
+        data_type::{CommitMetadata, RefType},
+        operation::{
+            branch::{checkout_commit, list_commits, list_refs},
+            repo::init_repo,
+            revision::create_revision,
+        },
     },
 };
 
@@ -57,12 +64,21 @@ pub fn status() -> Result<(), String> {
 }
 
 pub fn heads() -> Result<(), String> {
-    println!("Listing branch heads...");
+    let ref_list = list_refs(RefType::Head);
+    println!("{:#?}", ref_list);
     Ok(())
 }
 
 pub fn log() -> Result<(), String> {
-    println!("Displaying commit log...");
+    let commit_map = list_commits("HEAD".to_string(), None)?;
+
+    for (commit_hash, commit) in &commit_map {
+        println!("commit {}", commit_hash);
+        println!("\tAuthor: {}", commit.metadata.author);
+        println!("\tDate: {}", commit.metadata.timestamp);
+        println!("\tMessage: {}", commit.metadata.message);
+        println!();
+    }
     Ok(())
 }
 
