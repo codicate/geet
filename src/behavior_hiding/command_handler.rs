@@ -1,5 +1,3 @@
-use chrono::Utc;
-
 use crate::{
     file_hiding::{
         file_log::{does_object_exist, retrieve_object},
@@ -9,12 +7,20 @@ use crate::{
     repo_hiding::{
         data_type::{CommitMetadata, RefType},
         operation::{
-            branch::{checkout_commit, list_commits, list_refs},
+            branch::{
+                checkout_commit,
+                diff::{get_diffs, Diff},
+                list_commits, list_refs,
+            },
             repo::init_repo,
             revision::create_revision,
         },
     },
+    OBJECTS_DIR,
 };
+use chrono::Utc;
+use colored::Colorize;
+use std::process::Command;
 
 pub fn init() -> Result<(), String> {
     init_repo(&"default".to_string(), &"main".to_string())?;
@@ -83,11 +89,49 @@ pub fn log() -> Result<(), String> {
         println!("\tMessage: {}", commit.metadata.message);
         println!();
     }
+
     Ok(())
 }
 
-pub fn diff(hash1: &str, hash2: &str) -> Result<(), String> {
-    println!("Showing differences between {} and {}...", hash1, hash2);
+pub fn diff(hash1: &Hash, hash2: &Hash) -> Result<(), String> {
+    let Diff {
+        deleted_files,
+        modified_files,
+        new_files,
+    } = get_diffs(hash1, hash2);
+
+    if !deleted_files.is_empty() {
+        println!("Deleted files:");
+        for file in deleted_files {
+            let line = format!("- {}", file).red();
+            println!("{}", line);
+        }
+        println!();
+    } else {
+        println!("No files deleted.");
+    }
+
+    if !new_files.is_empty() {
+        println!("New files:");
+        for file in new_files {
+            let line = format!("+ {}", file).green();
+            println!("{}", line);
+        }
+        println!();
+    } else {
+        println!("No new files.");
+    }
+
+    if !modified_files.is_empty() {
+        for (file, hash1, hash2) in modified_files {
+            let line = format!("> {}", file).yellow();
+            println!("{}", line);
+            print_file_diffs(&hash1, &hash2);
+        }
+    } else {
+        println!("No files modified.");
+    }
+
     Ok(())
 }
 
@@ -126,4 +170,19 @@ pub fn checkout(str: &String, branch: &bool) -> Result<(), String> {
 pub fn merge(branch_name: &str) -> Result<(), String> {
     println!("Merging branch '{}'...", branch_name);
     Ok(())
+}
+
+fn print_file_diffs(hash1: &String, hash2: &String) {
+    let path1 = format!("{}/{}", OBJECTS_DIR, hash1);
+    let path2 = format!("{}/{}", OBJECTS_DIR, hash2);
+
+    let output = Command::new("diff")
+        .arg("-u")
+        .arg(path1)
+        .arg(path2)
+        .output()
+        .expect("failed to execute diff command");
+
+    let diff = String::from_utf8(output.stdout).unwrap();
+    println!("{}", diff);
 }

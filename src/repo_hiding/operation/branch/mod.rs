@@ -1,9 +1,9 @@
-use std::collections::HashMap;
-
+pub mod diff;
 use super::revision::{apply_revision, get_revision};
 use crate::file_hiding::ref_log::{delete_ref as _delete_ref, retrieve_ref, store_ref};
 use crate::repo_hiding::data_type::{Commit, Hash, Ref, RefType};
 use crate::REFS_DIR;
+use std::collections::HashMap;
 
 // create a new ref with the given name
 // hash is optional. If it is None, the ref will point to HEAD
