@@ -49,9 +49,13 @@ fn read_cwd_helper(path: &str) -> Result<Option<Hash>> {
     }
 }
 
-pub fn update_cwd(hash: &Hash) {
-    delete_cwd(Path::new(BASE_DIR)).unwrap();
-    update_cwd_helper(BASE_DIR, hash).unwrap();
+// pub fn update_cwd(hash: &Hash) {
+//     delete_cwd(Path::new(BASE_DIR)).unwrap();
+//     update_cwd_helper(BASE_DIR, hash).unwrap();
+// }
+pub fn update_cwd(hash: &Hash) -> Result<()> {
+    delete_cwd(Path::new(BASE_DIR))?;
+    update_cwd_helper(BASE_DIR, hash)
 }
 
 fn update_cwd_helper(path: &str, hash: &Hash) -> Result<()> {
@@ -63,9 +67,18 @@ fn update_cwd_helper(path: &str, hash: &Hash) -> Result<()> {
         let path_string = strip_path(&path);
 
         if node.is_dir {
+            if !path.exists() {
+                fs::create_dir_all(&path)?;
+            }
             fs::create_dir(path)?;
             update_cwd_helper(&path_string, &node.hash)?;
         } else {
+            if let Some(parent) = path.parent() {
+                fs::create_dir_all(parent)?;
+            }
+            if path.exists() {
+                fs::remove_file(&path)?;
+            }
             let contents = retrieve_object(&node.hash)?;
             let mut file = fs::File::create(path)?;
             file.write_all(contents.as_bytes())?;
