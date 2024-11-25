@@ -4,7 +4,7 @@ use crate::repo_hiding::data_type::{Hash, Tree};
 use crate::{BASE_DIR, GEET_DIR};
 use std::fs;
 use std::io::{Result, Write};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 pub fn read_cwd() -> Option<Hash> {
     read_cwd_helper(BASE_DIR).unwrap_or(None)
@@ -50,7 +50,7 @@ fn read_cwd_helper(path: &str) -> Result<Option<Hash>> {
 }
 
 pub fn update_cwd(hash: &Hash) {
-    delete_cwd(BASE_DIR).unwrap();
+    delete_cwd(Path::new(BASE_DIR)).unwrap();
     update_cwd_helper(BASE_DIR, hash).unwrap();
 }
 
@@ -76,25 +76,24 @@ fn update_cwd_helper(path: &str, hash: &Hash) -> Result<()> {
     Ok(())
 }
 
-fn delete_cwd(path: &str) -> Result<()> {
+fn delete_cwd(path: &Path) -> Result<()> {
     for child in fs::read_dir(&path)? {
         let path = child?.path();
-        let path_string = strip_path(&path);
-        println!("{}", path_string);
+        println!("{:?}", path);
 
         // ignore the ./geet folder
-        if path_string.starts_with(GEET_DIR) {
+        if path.starts_with(GEET_DIR) {
             continue;
         }
 
         if path.is_dir() {
-            delete_cwd(&path_string)?;
+            delete_cwd(&path)?;
         } else {
             fs::remove_file(path)?;
         }
     }
 
-    if path != BASE_DIR {
+    if !path.ends_with(BASE_DIR) {
         fs::remove_dir(path)?;
     }
     Ok(())
