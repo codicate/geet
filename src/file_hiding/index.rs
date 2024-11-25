@@ -9,12 +9,25 @@ use std::path::{Path, PathBuf};
 use super::file_log::{does_object_exist, hash_object};
 
 fn read_index() -> std::io::Result<HashSet<PathBuf>> {
-    let mut file = File::open(INDEX_FILE)?;
-    let mut content = String::new();
-    file.read_to_string(&mut content)?;
-
-    let paths: HashSet<PathBuf> = serde_json::from_str(&content).unwrap_or_default();
-    Ok(paths)
+    match File::open(INDEX_FILE) {
+        Ok(mut file) => {
+            let mut content = String::new();
+            file.read_to_string(&mut content)?;
+            Ok(serde_json::from_str(&content).unwrap_or_default())
+        },
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
+            // Create parent directory if it doesn't exist
+            if let Some(parent) = Path::new(INDEX_FILE).parent() {
+                fs::create_dir_all(parent)?;
+            }
+            
+            // Create and initialize the file with an empty array
+            let mut file = File::create(INDEX_FILE)?;
+            file.write_all(b"[]")?;
+            Ok(HashSet::new())
+        },
+        Err(e) => Err(e),
+    }
 }
 
 fn write_index(paths: &HashSet<PathBuf>) -> std::io::Result<()> {
@@ -66,12 +79,23 @@ pub fn add(path: &str) -> Result<(), String> {
         return Err("File or directory not found".to_string());
     }
 
-    let mut index = read_index().unwrap();
-    let files = get_files_recursively(path).unwrap();
+    // Use error handling instead of unwrap
+    let mut index = match read_index() {
+        Ok(index) => index,
+        Err(e) => return Err(format!("Failed to read index: {}", e))
+    };
+    
+    let files = match get_files_recursively(path) {
+        Ok(files) => files,
+        Err(e) => return Err(format!("Failed to process files: {}", e))
+    };
+    
     index.extend(files);
 
-    write_index(&index).unwrap();
-    Ok(())
+    match write_index(&index) {
+        Ok(_) => Ok(()),
+        Err(e) => Err(format!("Failed to write index: {}", e))
+    }
 }
 
 pub fn remove(path: &str) -> Result<(), String> {
@@ -115,6 +139,9 @@ pub fn get_unstaged_files() -> Vec<PathBuf> {
     get_files_recursively(path)
         .unwrap()
         .into_iter()
-        .filter(|f| !staged_files.contains(f))
+        .filter(|f| {
+            !f.to_string_lossy().contains("/.geet/") && 
+            !staged_files.contains(f)
+        })
         .collect()
 }
