@@ -1,3 +1,10 @@
+build geet
+
+```
+cargo build
+export PATH=$PATH:$(pwd)/target/debug
+```
+
 create a test repo at ./test and cd into it
 
 ```

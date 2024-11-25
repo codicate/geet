@@ -17,7 +17,7 @@ use std::path::Path;
 
 // Initializes a new repository configuration and prints it to the command aline
 pub fn init_repo(name: &String, default_branch: &String) -> Result<(), String> {
-    let path = "./test"; // TODO: change this to "." for production
+    let path = "."; // TODO: change this to "." for production
 
     // Ensure the directory is not already initialized
     if Path::new(&format!("{}/.geet", path)).exists() {
