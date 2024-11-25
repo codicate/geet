@@ -12,11 +12,11 @@ use crate::{
                 diff::{get_diffs, Diff},
                 list_commits, list_refs,
             },
-            repo::init_repo,
+            repo::{clone_repo, init_repo, pull_repo, push_repo},
             revision::create_revision,
         },
     },
-    OBJECTS_DIR,
+    BASE_DIR, OBJECTS_DIR,
 };
 use chrono::Utc;
 use colored::Colorize;
@@ -27,18 +27,23 @@ pub fn init() -> Result<(), String> {
     Ok(())
 }
 
-pub fn clone(repo_path: &str) -> Result<(), String> {
-    println!("Cloning repository from {}...", repo_path);
+pub fn clone(remote_path: &String) -> Result<(), String> {
+    println!("Cloning repository from {}...", remote_path);
+    clone_repo(remote_path, &BASE_DIR.to_string())?;
     Ok(())
 }
 
-pub fn pull(repo_path: &str) -> Result<(), String> {
-    println!("Pulling changes from {}...", repo_path);
+pub fn pull(remote_path: &String) -> Result<(), String> {
+    pull_repo(remote_path, &BASE_DIR.to_string())
+        .map_err(|e| format!("Failed to pull changes\n{}", e))?;
+    println!("Pulled changes from {}.", remote_path);
     Ok(())
 }
 
-pub fn push(repo_path: &str) -> Result<(), String> {
-    println!("Pushing changes to {}...", repo_path);
+pub fn push(remote_path: &String) -> Result<(), String> {
+    push_repo(&BASE_DIR.to_string(), remote_path)
+        .map_err(|e| format!("Failed to push changes\n{}", e))?;
+    println!("Pushed changes to {}.", remote_path);
     Ok(())
 }
 
@@ -165,8 +170,11 @@ pub fn checkout(str: &String, branch: &bool) -> Result<(), String> {
     Ok(())
 }
 
-pub fn merge(branch_name: &str) -> Result<(), String> {
-    println!("Merging branch '{}'...", branch_name);
+// TODO
+pub fn merge(from: &Hash) -> Result<(), String> {
+    let to = "HEAD".to_string();
+    let merged_revision = format!("Merged revision {} to {}", from, to);
+
     Ok(())
 }
 

@@ -39,6 +39,15 @@ pub fn init_repo(name: &String, default_branch: &String) -> Result<(), String> {
     //Here, None is passed for the hash since no commits exist yet
     let branch_ref = create_ref(RefType::Branch, default_branch.clone(), None);
 
+    // TODO: should we create a inital commit? make it will make things easier
+    // // Step 1: Create an initial commit
+    // let metadata = CommitMetadata {
+    //     author: "System".to_string(), // Default system author for the initial commit
+    //     message: "Initial commit".to_string(),
+    //     timestamp: chrono::Utc::now().to_rfc3339(),
+    // };
+    // create_revision(metadata);
+
     // Create the RepositoryConfig instance
     let config = RepositoryConfig {
         name: name.clone(),
@@ -73,7 +82,7 @@ fn copy_refs(remote_path: &str, local_path: &str) -> std::io::Result<()> {
     copy_dir(&remote_refs_path, &local_refs_path)
 }
 
-pub fn clone_repo(remote_path: String, local_path: String) -> Result<(), String> {
+pub fn clone_repo(remote_path: &String, local_path: &String) -> Result<(), String> {
     // Validate the remote repository
     validate_remote_repo(&remote_path)
         .map_err(|e| format!("Remote repository validation failed: {}", e))?;
@@ -140,7 +149,7 @@ pub fn copy_new_or_updated_files(src: &str, dest: &str) -> io::Result<()> {
 }
 
 /// Pull changes from the remote repository to the local repository
-pub fn pull_repo(remote_path: String, local_path: String) -> Result<(), String> {
+pub fn pull_repo(remote_path: &String, local_path: &String) -> Result<(), String> {
     // Validate the remote repository
     validate_remote_repo(&remote_path)
         .map_err(|e| format!("Remote repository validation failed: {}", e))?;
@@ -179,7 +188,7 @@ pub fn pull_repo(remote_path: String, local_path: String) -> Result<(), String> 
 }
 
 /// Push changes from the local repository to the remote repository
-pub fn push_repo(local_path: String, remote_path: String) -> Result<(), String> {
+pub fn push_repo(local_path: &String, remote_path: &String) -> Result<(), String> {
     // Validate the remote repository
     validate_remote_repo(&remote_path)
         .map_err(|e| format!("Remote repository validation failed: {}", e))?;
@@ -224,34 +233,34 @@ If the checksums differ, the file has been updated or is new.
 Synchronize Files:
 Copy files that have new or updated checksums to the destination repository.*/
 
-fn main() {
-    // Initialize a new repository
-    match init_repo(&"test_repo".to_string(), &"main".to_string()) {
-        Ok(_) => println!("Repository initialized successfully."),
-        Err(e) => eprintln!("Error initializing repository: {}", e),
-    }
+// fn main() {
+//     // Initialize a new repository
+//     match init_repo(&"test_repo".to_string(), &"main".to_string()) {
+//         Ok(_) => println!("Repository initialized successfully."),
+//         Err(e) => eprintln!("Error initializing repository: {}", e),
+//     }
 
-    // Clean up existing destination path before cloning
-    if Path::new("test_repo_clone").exists() {
-        std::fs::remove_dir_all("test_repo_clone")
-            .expect("Failed to clean up existing destination path");
-    }
+//     // Clean up existing destination path before cloning
+//     if Path::new("test_repo_clone").exists() {
+//         std::fs::remove_dir_all("test_repo_clone")
+//             .expect("Failed to clean up existing destination path");
+//     }
 
-    // Clone the repository
-    match clone_repo("test_repo".to_string(), "test_repo_clone".to_string()) {
-        Ok(_) => println!("Repository cloned successfully."),
-        Err(e) => eprintln!("Error cloning repository: {}", e),
-    }
+//     // Clone the repository
+//     match clone_repo(&"test_repo".to_string(), &"test_repo_clone".to_string()) {
+//         Ok(_) => println!("Repository cloned successfully."),
+//         Err(e) => eprintln!("Error cloning repository: {}", e),
+//     }
 
-    // Push changes to the cloned repository
-    match push_repo("test_repo".to_string(), "test_repo_clone".to_string()) {
-        Ok(_) => println!("Changes pushed successfully."),
-        Err(e) => eprintln!("Error pushing changes: {}", e),
-    }
+//     // Push changes to the cloned repository
+//     match push_repo("test_repo".to_string(), "test_repo_clone".to_string()) {
+//         Ok(_) => println!("Changes pushed successfully."),
+//         Err(e) => eprintln!("Error pushing changes: {}", e),
+//     }
 
-    // Pull changes from the cloned repository back to the original
-    match pull_repo("test_repo_clone".to_string(), "test_repo".to_string()) {
-        Ok(_) => println!("Changes pulled successfully."),
-        Err(e) => eprintln!("Error pulling changes: {}", e),
-    }
-}
+//     // Pull changes from the cloned repository back to the original
+//     match pull_repo("test_repo_clone".to_string(), "test_repo".to_string()) {
+//         Ok(_) => println!("Changes pulled successfully."),
+//         Err(e) => eprintln!("Error pulling changes: {}", e),
+//     }
+// }

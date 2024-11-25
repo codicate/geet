@@ -6,7 +6,7 @@ use crate::{
     GEET_DIR,
 };
 use clap::{Parser, Subcommand};
-use std::fmt;
+use std::{default, fmt};
 
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
@@ -23,19 +23,19 @@ enum Commands {
     /// Clone a repository from a remote location to a local path
     Clone {
         /// Path to the remote repository to clone
-        repo_path: String,
+        remote_path: String,
     },
 
     /// Pull changes from the remote repository and merge them into the current branch
     Pull {
         /// Path to the remote repository to pull from
-        repo_path: String,
+        remote_path: String,
     },
 
     /// Push local changes to the remote repository
     Push {
         /// Path to the remote repository to push to
-        repo_path: String,
+        remote_path: String,
     },
 
     /// Add a file or files to the staging area
@@ -95,10 +95,7 @@ enum Commands {
     },
 
     /// Merge the changes from another branch into the current branch
-    Merge {
-        /// Name of the branch to merge into the current branch
-        branch_name: String,
-    },
+    Merge { from: String },
 
     /// Clean up unnecessary files and optimize the repository TODO: remove from production
     Cleanup {},
@@ -135,9 +132,9 @@ pub fn execute_command(command: &Commands) -> Result<(), String> {
 
     match command {
         Commands::Init {} => command_handler::init(),
-        Commands::Clone { repo_path } => command_handler::clone(repo_path),
-        Commands::Pull { repo_path } => command_handler::pull(repo_path),
-        Commands::Push { repo_path } => command_handler::push(repo_path),
+        Commands::Clone { remote_path } => command_handler::clone(remote_path),
+        Commands::Pull { remote_path } => command_handler::pull(remote_path),
+        Commands::Push { remote_path } => command_handler::push(remote_path),
         Commands::Add { file_path } => command_handler::add(file_path),
         Commands::Remove { file_path } => command_handler::remove(file_path),
         Commands::Heads {} => command_handler::heads(),
@@ -147,7 +144,7 @@ pub fn execute_command(command: &Commands) -> Result<(), String> {
         Commands::Cat { file_path } => command_handler::cat(file_path),
         Commands::Commit { message, author } => command_handler::commit(message, author),
         Commands::Checkout { str, branch } => command_handler::checkout(str, branch),
-        Commands::Merge { branch_name } => command_handler::merge(branch_name),
+        Commands::Merge { from } => command_handler::merge(from),
         Commands::Cleanup {} => cleanup_helper(),
     }
 }
