@@ -1,52 +1,86 @@
-build geet
+# Geet
 
-```
-cargo build
-export PATH=$PATH:$(pwd)/target/debug
-```
+**Geet** is a lightweight Git implementation built with Rust. This README provides a step-by-step guide to building, running, and using Geet commands.
 
-create a test repo at ./test and cd into it
+---
 
-```
+## Build and Setup
+
+1. Build the `geet` binary using Cargo:
+
+   ```bash
+   cargo build
+   ```
+
+2. Add the `geet` binary to your system's PATH:
+   ```bash
+   export PATH=$PATH:$(pwd)/target/debug
+   ```
+
+---
+
+## Commands and Usage
+
+### Initialize a New Repository
+
+Create a test repository and initialize it with Geet:
+
+```bash
 mkdir test
 cd test
+geet init
 ```
 
-to init a new repo
+### Stage a File
 
-```
-cargo run -- init test
-```
+Add (stage) a file to the repository:
 
-to add (stage) the file
-
-```
-cargo run -- add test.txt
+```bash
+geet add test.txt
 ```
 
-to make a new commit
+### Make a Commit
 
-```
-cargo run -- commit -m "first one"
-```
+Commit staged changes with a message:
 
-to check status
-
-```
-cargo run -- status
+```bash
+geet commit -m "first one"
 ```
 
-to checkout a previous commit using its hash
+### Check Repository Status
 
-```
-cargo run -- checkout a145d0486463ceb2840f5c871608f142b713736f
+Check the current status of the repository (what is staged and not staged)
+
+```bash
+geet status
 ```
 
-to clean up the repository and try these commands again
+### Checkout a Previous Commit
 
+Switch to a previous commit using its hash:
+
+```bash
+geet checkout a145d0486463ceb2840f5c871608f142b713736f
 ```
-cargo run -- cleanup
+
+### Clean Up the Repository
+
+Reset the repository for a fresh start:
+
+```bash
+geet cleanup
 ```
+
+---
+
+## Notes
+
+- After the initial setup, all commands can be run directly with `geet` instead of `cargo run --`.
+- Replace `<commit-hash>` in commands with the actual hash of the commit you want to reference.
+
+---
+
+Feel free to update this README as you add more features to Geet!
 
 # todo
 
