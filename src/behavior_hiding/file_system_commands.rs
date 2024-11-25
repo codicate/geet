@@ -18,6 +18,10 @@ pub enum RepositoryCommand {
     Add {
         path: String,
     },
+    Clone {
+        remote_path: String,
+        local_path: String
+    },
     Status,
 }
 
@@ -29,7 +33,16 @@ impl FileSystemCommands {
             .map_err(|e| e.to_string())
     }
 
+    pub fn clone_repository(&self, remote_path: String, local_path: String) -> Result<(), String> {
+        RepositoryConfig::clone_repo(remote_path, local_path).map(|_| ()) // If successful, return Ok(())
+        .map_err(|e| e.to_string())
+    }
+    
     pub fn add_file(&self, path: &str) -> Result<(), String> {
+        // check if file exist first
+        if !Path::new(path).exists() {
+            return Err(format!("Error: file '{}' does not exist", path));
+        }
         add_to_index(path).map_err(|e| e.to_string())
     }
 

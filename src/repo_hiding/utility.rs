@@ -1,4 +1,7 @@
 use std::process::Command;
+use std::{fs, io};
+use std::path::Path;
+use std::collections::HashSet;
 
 enum DiffType {
     Add,
@@ -23,3 +26,4 @@ pub fn diff(path1: &String, path2: &String) -> String {
 
     String::from_utf8(output.stdout).unwrap()
 }
+

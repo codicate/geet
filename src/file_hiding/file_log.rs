@@ -91,6 +91,23 @@ pub fn deserialize_metadata<T: DeserializeOwned>(data: &[u8]) -> Result<T> {
     todo!()
 }
 
+//
+pub fn copy_dir(src: &str, dest: &str) -> Result<()> {
+    fs::create_dir_all(dest)?;
+    for entry in fs::read_dir(src)? {
+        let entry = entry?;
+        let path = entry.path();
+        let dest_path = Path::new(dest).join(entry.file_name());
+
+        if path.is_dir() {
+            copy_dir(&path.to_string_lossy(), &dest_path.to_string_lossy())?;
+        } else {
+            fs::copy(&path, &dest_path)?;
+        }
+    }
+    Ok(())
+}
+
 // TODO
 trait DeserializeOwned: for<'de> Deserialize<'de> {}
 // type DeserializationError = SerializationError;
