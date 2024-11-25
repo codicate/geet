@@ -1,8 +1,8 @@
-use crate::file_hiding::file_log::{copy_dir, deserialize_metadata};
+use crate::file_hiding::file_log::{copy_dir, deserialize_metadata, store_object};
 use crate::file_hiding::index;
 use crate::file_hiding::ref_log::store_ref;
+use crate::repo_hiding::data_type::{Commit, Hash, RefType, Tree};
 use crate::repo_hiding::data_type::{CommitMetadata, RepositoryConfig};
-use crate::repo_hiding::data_type::{Hash, RefType};
 use crate::repo_hiding::operation::branch::{
     checkout_commit, create_head, create_ref, get_head, get_ref, update_head, update_ref,
 };
@@ -17,53 +17,62 @@ use std::io;
 use std::io::Write;
 use std::path::Path;
 
-// Initializes a new repository configuration and prints it to the command aline
 pub fn init_repo(name: &String, default_branch: &String) -> Result<(), String> {
-    let path = "."; // TODO: change this to "." for production
+    let path = ".";
 
-    // Ensure the directory is not already initialized
+    // Check if repository already exists
     if Path::new(&format!("{}/.geet", path)).exists() {
         return Err("Repository already initialized".to_string());
     }
 
-    // create .geet directory
+    // Create directory structure with proper error handling
     let refs_path = format!("{}/.geet/refs", path);
-    fs::create_dir_all(&refs_path).unwrap();
     let objects_path = format!("{}/.geet/objects", path);
-    fs::create_dir_all(&objects_path).unwrap();
-    // create the index file
-    File::create(format!("{}/.geet/index", path)).unwrap();
 
-    // Create the HEAD reference
-    create_head();
+    fs::create_dir_all(&refs_path)
+        .map_err(|e| format!("Failed to create refs directory: {}", e))?;
+    fs::create_dir_all(&objects_path)
+        .map_err(|e| format!("Failed to create objects directory: {}", e))?;
 
-    //Create the default branch reference using `create_ref`
-    //Here, None is passed for the hash since no commits exist yet
-    let branch_ref = create_ref(RefType::Branch, default_branch.clone(), None);
+    // Create index file
+    File::create(format!("{}/.geet/index", path))
+        .map_err(|e| format!("Failed to create index file: {}", e))?;
 
-    // TODO: should we create a inital commit? make it will make things easier
-    // Step 1: Create an initial commit
+    // Create initial empty tree and store it
+    let empty_tree = Tree::new();
+    let tree_serialized = empty_tree.serialize();
+    let tree_hash = store_object(&tree_serialized)
+        .map_err(|e| format!("Failed to store initial tree: {}", e))?;
+
+    // Create initial commit
     let metadata = CommitMetadata {
-        author: "System".to_string(), // Default system author for the initial commit
-        message: "%Initial Commit%".to_string(),
+        author: "System".to_string(),
+        message: "Initial empty commit".to_string(),
         timestamp: chrono::Utc::now().to_rfc3339(),
     };
 
-    index::add(BASE_DIR)?;
-    create_revision(metadata)?;
+    let initial_commit = Commit::new_commit(tree_hash, None, metadata);
+    let commit_serialized = initial_commit.serialize();
+    let commit_hash = store_object(&commit_serialized)
+        .map_err(|e| format!("Failed to store initial commit: {}", e))?;
 
-    // Create the RepositoryConfig instance
+    // Create HEAD and default branch
+    create_head();
+    create_ref(
+        RefType::Branch,
+        default_branch.clone(),
+        Some(commit_hash.clone()),
+    )?;
+    update_head(&commit_hash);
+
+    // Create and store repository configuration
     let config = RepositoryConfig {
         name: name.clone(),
         default_branch: default_branch.clone(),
     };
 
-    // Serialize the config to JSON format
-    let serialized_config = config.serialize();
-
-    // Print the serialized JSON to the command line
     println!("Repository configuration initialized:");
-    println!("{}", serialized_config);
+    println!("{}", config.serialize());
 
     Ok(())
 }
