@@ -179,16 +179,36 @@ pub fn merge(from: &Hash) -> Result<(), String> {
 }
 
 fn print_file_diffs(hash1: &String, hash2: &String) {
-    let path1 = format!("{}\\{}", OBJECTS_DIR, hash1);
-    let path2 = format!("{}\\{}", OBJECTS_DIR, hash2);
+    // Retrieve content from both versions
+    let content1 = retrieve_object(hash1).unwrap_or_else(|_| String::new());
+    let content2 = retrieve_object(hash2).unwrap_or_else(|_| String::new());
 
-    let output = Command::new("diff")
-        .arg("-u")
-        .arg(path1)
-        .arg(path2)
-        .output()
-        .expect("failed to execute diff command");
+    // Split content into lines
+    let lines1: Vec<&str> = content1.lines().collect();
+    let lines2: Vec<&str> = content2.lines().collect();
 
-    let diff = String::from_utf8(output.stdout).unwrap();
-    println!("{}", diff);
+    // Print the diff
+    println!("@@ -{},{} +{},{} @@", 1, lines1.len(), 1, lines2.len());
+
+    // Simple line-by-line comparison
+    let max_lines = lines1.len().max(lines2.len());
+    for i in 0..max_lines {
+        match (lines1.get(i), lines2.get(i)) {
+            (Some(l1), Some(l2)) if l1 == l2 => {
+                println!(" {}", l1); // Unchanged line
+            }
+            (Some(l1), Some(l2)) => {
+                println!("{}", format!("-{}", l1).red()); // Modified line (old)
+                println!("{}", format!("+{}", l2).green()); // Modified line (new)
+            }
+            (Some(l1), None) => {
+                println!("{}", format!("-{}", l1).red()); // Deleted line
+            }
+            (None, Some(l2)) => {
+                println!("{}", format!("+{}", l2).green()); // Added line
+            }
+            (None, None) => unreachable!(),
+        }
+    }
+    println!();
 }
