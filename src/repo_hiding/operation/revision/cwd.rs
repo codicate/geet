@@ -5,6 +5,7 @@ use crate::{BASE_DIR, GEET_DIR};
 use std::fs;
 use std::io::{Result, Write};
 use std::path::{Path, PathBuf};
+use std::collections::HashSet;
 
 pub fn read_cwd() -> Option<Hash> {
     read_cwd_helper(BASE_DIR).unwrap_or(None)
@@ -13,9 +14,14 @@ pub fn read_cwd() -> Option<Hash> {
 fn read_cwd_helper(path: &str) -> Result<Option<Hash>> {
     let children = fs::read_dir(path)?;
     let mut tree = Tree::new();
+    let staged_files: HashSet<PathBuf> = index::get_staged_files()
+        .into_iter()
+        .map(|p| p.canonicalize().unwrap_or(p))  // Normalize paths
+        .collect();
 
     for child in children {
         let path = child?.path();
+        let canonical_path = path.canonicalize()?;  // Normalize path
         let path_string = strip_path(&path);
 
         // ignore the ./geet folder
@@ -23,20 +29,18 @@ fn read_cwd_helper(path: &str) -> Result<Option<Hash>> {
             continue;
         }
 
-        // ignore files that are not in the index
-        if path.is_file() && !index::contains(&path) {
-            continue;
-        }
+        // Only process if file is staged or is a directory
+        if path.is_dir() || staged_files.contains(&canonical_path) {
+            let hash = if path.is_dir() {
+                read_cwd_helper(&path_string)?
+            } else {
+                Some(store_file(&path_string))
+            };
 
-        let hash = if path.is_dir() {
-            read_cwd_helper(&path_string)?
-        } else {
-            Some(store_file(&path_string))
-        };
-
-        if let Some(hash) = hash {
-            let file_name = path.file_name().unwrap().to_str().unwrap();
-            tree.add_node(file_name.to_string(), hash, path.is_dir());
+            if let Some(hash) = hash {
+                let file_name = path.file_name().unwrap().to_str().unwrap();
+                tree.add_node(file_name.to_string(), hash, path.is_dir());
+            }
         }
     }
 
