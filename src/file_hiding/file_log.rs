@@ -19,7 +19,7 @@ pub fn store_object(data: &String) -> Result<String> {
     let hash_string = hash_object(data);
 
     // Write data to a file named with its hash
-    let file_path = format!("{}/{}", OBJECTS_DIR, hash_string);
+    let file_path = format!("{}\\{}", OBJECTS_DIR, hash_string);
     let mut file = File::create(&file_path)?;
     file.write_all(data.as_bytes())?;
 
@@ -34,7 +34,7 @@ pub fn retrieve_object(hash: &String) -> Result<String> {
         ));
     }
 
-    let file_path = format!("{}/{}", OBJECTS_DIR, hash);
+    let file_path = format!("{}\\{}", OBJECTS_DIR, hash);
 
     if !Path::new(&file_path).exists() {
         return Err(io::Error::new(io::ErrorKind::NotFound, "File not found"));
@@ -47,7 +47,7 @@ pub fn retrieve_object(hash: &String) -> Result<String> {
 }
 
 pub fn does_object_exist(hash: &String) -> bool {
-    let object_path = format!("{}/{}", OBJECTS_DIR, hash);
+    let object_path = format!("{}\\{}", OBJECTS_DIR, hash);
     let path = Path::new(object_path.as_str());
     return path.exists();
 }

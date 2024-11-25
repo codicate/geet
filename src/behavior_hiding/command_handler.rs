@@ -102,34 +102,32 @@ pub fn diff(hash1: &Hash, hash2: &Hash) -> Result<(), String> {
 
     if !deleted_files.is_empty() {
         println!("Deleted files:");
-        for file in deleted_files {
+        for file in &deleted_files {
             let line = format!("- {}", file).red();
             println!("{}", line);
         }
         println!();
-    } else {
-        println!("No files deleted.");
     }
 
     if !new_files.is_empty() {
         println!("New files:");
-        for file in new_files {
+        for file in &new_files {
             let line = format!("+ {}", file).green();
             println!("{}", line);
         }
         println!();
-    } else {
-        println!("No new files.");
     }
 
     if !modified_files.is_empty() {
-        for (file, hash1, hash2) in modified_files {
+        for (file, hash1, hash2) in &modified_files {
             let line = format!("> {}", file).yellow();
             println!("{}", line);
             print_file_diffs(&hash1, &hash2);
         }
-    } else {
-        println!("No files modified.");
+    }
+
+    if deleted_files.is_empty() && new_files.is_empty() && modified_files.is_empty() {
+        println!("No changes found between the commits.");
     }
 
     Ok(())
@@ -173,8 +171,8 @@ pub fn merge(branch_name: &str) -> Result<(), String> {
 }
 
 fn print_file_diffs(hash1: &String, hash2: &String) {
-    let path1 = format!("{}/{}", OBJECTS_DIR, hash1);
-    let path2 = format!("{}/{}", OBJECTS_DIR, hash2);
+    let path1 = format!("{}\\{}", OBJECTS_DIR, hash1);
+    let path2 = format!("{}\\{}", OBJECTS_DIR, hash2);
 
     let output = Command::new("diff")
         .arg("-u")

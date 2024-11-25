@@ -1,7 +1,8 @@
 use crate::file_hiding::file_log::retrieve_object;
 use crate::file_hiding::ref_log::Hash;
 use crate::repo_hiding::data_type::{Commit, Tree};
-use crate::{BASE_DIR, OBJECTS_DIR};
+use crate::{BASE_DIR, GEET_DIR, OBJECTS_DIR};
+use std::path::Path;
 use std::{collections::HashMap, path::PathBuf};
 
 pub struct Diff {
@@ -64,16 +65,17 @@ fn get_file_list_helper(
     let tree = Tree::deserialize(&serialized);
 
     for node in tree.nodes {
-        let path = PathBuf::from(dir)
-            .join(node.name)
-            .to_str()
-            .unwrap()
-            .to_string();
+        let pathstr = PathBuf::from(dir).join(node.name);
+        let path = Path::new(&pathstr).to_str().unwrap();
+
+        if path.starts_with(GEET_DIR) {
+            continue;
+        }
 
         if node.is_dir {
             get_file_list_helper(&path, &node.hash, file_list);
         } else {
-            file_list.insert(path, node.hash);
+            file_list.insert(path.to_string(), node.hash);
         }
     }
 

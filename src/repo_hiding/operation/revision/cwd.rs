@@ -79,7 +79,6 @@ fn update_cwd_helper(path: &str, hash: &Hash) -> Result<()> {
 fn delete_cwd(path: &Path) -> Result<()> {
     for child in fs::read_dir(&path)? {
         let path = child?.path();
-        println!("{:?}", path);
 
         // ignore the ./geet folder
         if path.starts_with(GEET_DIR) {
