@@ -130,6 +130,12 @@ pub fn parse_input() {
 pub fn execute_command(command: &Commands) -> Result<(), String> {
     let formatter = OutputFormatter::new(FormatStyle::Colored);
 
+    if !is_repo_initialized() && !matches!(command, Commands::Init {}) {
+        return Err(
+            "Repository not initialized. Use 'geet init' to create a new repository.".to_string(),
+        );
+    }
+
     match command {
         Commands::Init {} => command_handler::init(),
         Commands::Clone { remote_path } => command_handler::clone(remote_path),
@@ -147,6 +153,10 @@ pub fn execute_command(command: &Commands) -> Result<(), String> {
         Commands::Merge { from } => command_handler::merge(from),
         Commands::Cleanup {} => cleanup_helper(),
     }
+}
+
+fn is_repo_initialized() -> bool {
+    std::path::Path::new(GEET_DIR).exists()
 }
 
 // This is a debug command to clean up the .geet directory TODO: remove from production
