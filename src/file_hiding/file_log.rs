@@ -102,7 +102,11 @@ pub fn copy_dir(src: &str, dest: &str) -> Result<()> {
         if path.is_dir() {
             copy_dir(&path.to_string_lossy(), &dest_path.to_string_lossy())?;
         } else {
-            fs::copy(&path, &dest_path)?;
+            let mut source_file = File::open(path)?;
+            println!("{}", dest_path.exists());
+            let mut dest_file = File::create(&dest_path)?;
+            println!("{}", dest_path.exists());
+            io::copy(&mut source_file, &mut dest_file)?;
         }
     }
     Ok(())
