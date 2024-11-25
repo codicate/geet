@@ -130,7 +130,7 @@ pub fn parse_input() {
 pub fn execute_command(command: &Commands) -> Result<(), String> {
     let formatter = OutputFormatter::new(FormatStyle::Colored);
 
-    if !is_repo_initialized() && !matches!(command, Commands::Init {}) {
+    if !is_repo_initialized() && !matches!(command, Commands::Init {} | Commands::Clone { .. }) {
         return Err(
             "Repository not initialized. Use 'geet init' to create a new repository.".to_string(),
         );

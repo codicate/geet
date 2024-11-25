@@ -1,11 +1,13 @@
 use crate::file_hiding::file_log::{copy_dir, deserialize_metadata};
+use crate::file_hiding::index;
 use crate::file_hiding::ref_log::store_ref;
 use crate::repo_hiding::data_type::{CommitMetadata, RepositoryConfig};
 use crate::repo_hiding::data_type::{Hash, RefType};
 use crate::repo_hiding::operation::branch::{
-    create_head, create_ref, get_head, get_ref, update_head, update_ref,
+    checkout_commit, create_head, create_ref, get_head, get_ref, update_head, update_ref,
 };
 use crate::repo_hiding::operation::revision::create_revision;
+use crate::BASE_DIR;
 use clap::builder::Str;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
@@ -40,13 +42,15 @@ pub fn init_repo(name: &String, default_branch: &String) -> Result<(), String> {
     let branch_ref = create_ref(RefType::Branch, default_branch.clone(), None);
 
     // TODO: should we create a inital commit? make it will make things easier
-    // // Step 1: Create an initial commit
-    // let metadata = CommitMetadata {
-    //     author: "System".to_string(), // Default system author for the initial commit
-    //     message: "Initial commit".to_string(),
-    //     timestamp: chrono::Utc::now().to_rfc3339(),
-    // };
-    // create_revision(metadata);
+    // Step 1: Create an initial commit
+    let metadata = CommitMetadata {
+        author: "System".to_string(), // Default system author for the initial commit
+        message: "%Initial Commit%".to_string(),
+        timestamp: chrono::Utc::now().to_rfc3339(),
+    };
+
+    index::add(BASE_DIR)?;
+    create_revision(metadata)?;
 
     // Create the RepositoryConfig instance
     let config = RepositoryConfig {
@@ -87,13 +91,18 @@ pub fn clone_repo(remote_path: &String, local_path: &String) -> Result<(), Strin
     validate_remote_repo(&remote_path)
         .map_err(|e| format!("Remote repository validation failed: {}", e))?;
 
-    // Ensure the local path does not already exist
-    if Path::new(&local_path).exists() {
-        return Err("The destination path already exists.".to_string());
-    }
+    // // Ensure the local path does not already exist
+    // if Path::new(&local_path).exists() {
+    //     return Err("The destination path already exists.".to_string());
+    // }
 
-    // Create the local repository structure
-    fs::create_dir_all(&local_path).map_err(|e| format!("Failed to create directory: {}", e))?;
+    // // Create the local repository structure
+    // fs::create_dir_all(&local_path).map_err(|e| format!("Failed to create directory: {}", e))?;
+
+    // Ensure the folder is empty
+    if !is_folder_empty(&local_path) {
+        return Err("The current directory is not empty.".to_string());
+    }
 
     // Copy the .geet directory
     let remote_geet_path = format!("{}/.geet", remote_path);
@@ -113,6 +122,7 @@ pub fn clone_repo(remote_path: &String, local_path: &String) -> Result<(), Strin
 
     // Update local HEAD to point to the remote HEAD hash
     update_head(&remote_head_hash);
+    checkout_commit(&remote_head_hash)?;
 
     println!("Repository successfully cloned to {}", local_path);
     Ok(())
@@ -215,6 +225,11 @@ pub fn push_repo(local_path: &String, remote_path: &String) -> Result<(), String
 
     println!("Repository successfully pushed to {}", remote_path);
     Ok(())
+}
+
+fn is_folder_empty(path: &str) -> bool {
+    let mut entries = fs::read_dir(path).unwrap();
+    entries.next().is_none()
 }
 
 /*Conflict Handling:
