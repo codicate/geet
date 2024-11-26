@@ -55,6 +55,15 @@ Check the current status of the repository (what is staged and not staged)
 geet status
 ```
 
+### Show File or Commit Content
+
+View the content of a file or commit details:
+
+```bash
+geet cat test.txt
+geet cat <commit-hash>
+```
+
 ### Checkout a Previous Commit
 
 Switch to a previous commit using its hash:
@@ -77,6 +86,8 @@ geet cleanup
 
 - After the initial setup, all commands can be run directly with `geet` instead of `cargo run --`.
 - Replace `<commit-hash>` in commands with the actual hash of the commit you want to reference.
+- The cat command supports both current files and commit objects with formatted output.
+- The cleanup command safely removes the .geet directory, allowing for a fresh repository initialization.
 
 ---
 
