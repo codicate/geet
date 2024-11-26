@@ -5,7 +5,7 @@ use crate::{
         ref_log::Hash,
     },
     repo_hiding::{
-        data_type::{CommitMetadata, RefType},
+        data_type::{CommitMetadata, RefType, Commit},
         operation::{
             branch::{
                 checkout_commit,
@@ -21,6 +21,7 @@ use crate::{
 use chrono::Utc;
 use colored::Colorize;
 use std::process::Command;
+use std::fs;
 
 pub fn init() -> Result<(), String> {
     init_repo(&"default".to_string(), &"main".to_string())?;
@@ -138,9 +139,34 @@ pub fn diff(hash1: &Hash, hash2: &Hash) -> Result<(), String> {
     Ok(())
 }
 
-pub fn cat(hash: &Hash) -> Result<(), String> {
-    let content =
-        retrieve_object(hash).map_err(|_| "Object with given hash not found".to_string())?;
+// pub fn cat(hash: &Hash) -> Result<(), String> {
+//     let content =
+//         retrieve_object(hash).map_err(|_| "Object with given hash not found".to_string())?;
+//     println!("{}", content);
+//     Ok(())
+// }
+pub fn cat(path_or_hash: &String) -> Result<(), String> {
+    // First try to read as a regular file
+    if let Ok(content) = std::fs::read_to_string(path_or_hash) {
+        println!("{}", content);
+        return Ok(());
+    }
+
+    // If not a file, try as a hash
+    let content = retrieve_object(path_or_hash)
+        .map_err(|_| format!("Neither a valid file path nor a valid object hash: {}", path_or_hash))?;
+
+    // Try to parse as commit for better formatting
+    if let Ok(commit) = serde_json::from_str::<Commit>(&content) {
+        println!("Commit: {}\nAuthor: {}\nDate: {}\nMessage: {}", 
+            path_or_hash, 
+            commit.metadata.author, 
+            commit.metadata.timestamp, 
+            commit.metadata.message);
+        return Ok(());
+    }
+
+    // If not a commit, just print the content
     println!("{}", content);
     Ok(())
 }
