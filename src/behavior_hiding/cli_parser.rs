@@ -130,10 +130,23 @@ pub fn parse_input() {
 pub fn execute_command(command: &Commands) -> Result<(), String> {
     let formatter = OutputFormatter::new(FormatStyle::Colored);
 
-    if !is_repo_initialized() && !matches!(command, Commands::Init {} | Commands::Clone { .. }) {
-        return Err(
-            "Repository not initialized. Use 'geet init' to create a new repository.".to_string(),
-        );
+    // if !is_repo_initialized() && !matches!(command, Commands::Init {} | Commands::Clone { .. }) {
+    //     return Err(
+    //         "Repository not initialized. Use 'geet init' to create a new repository.".to_string(),
+    //     );
+    // }
+    // only check for repo init if the command isn't 'init', 'clone, or 'cleanup'
+    match command {
+        Commands::Init {} => return command_handler::init(),
+        Commands::Clone { remote_path } => return command_handler::clone(remote_path),
+        Commands::Cleanup {} => return cleanup_helper(),
+        _ => {
+            if !is_repo_initialized() {
+                return Err(
+                    "Repository not initialized. Use 'geet init' to create a new repository.".to_string(),
+                );
+            }
+        }
     }
 
     match command {
@@ -161,6 +174,24 @@ fn is_repo_initialized() -> bool {
 
 // This is a debug command to clean up the .geet directory TODO: remove from production
 fn cleanup_helper() -> Result<(), String> {
-    std::fs::remove_dir_all(GEET_DIR);
-    Ok(())
+    if !std::path::Path::new(GEET_DIR).exists() {
+        println!("Repository already clean - nothing to do.");
+        return Ok(());
+    }
+    
+    // List what we're going to remove
+    println!("Cleaning up repository...");
+    if let Ok(metadata) = std::fs::metadata(GEET_DIR) {
+        if metadata.is_dir() {
+            println!("Removing .geet directory and all contents...");
+        }
+    }
+
+    match std::fs::remove_dir_all(GEET_DIR) {
+        Ok(_) => {
+            println!("Repository cleaned successfully. Use 'geet init' to create a new repository.");
+            Ok(())
+        }
+        Err(e) => Err(format!("Failed to clean up repository: {}", e))
+    }
 }
