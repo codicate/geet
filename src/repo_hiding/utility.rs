@@ -1,7 +1,7 @@
+use std::collections::HashSet;
+use std::path::Path;
 use std::process::Command;
 use std::{fs, io};
-use std::path::Path;
-use std::collections::HashSet;
 
 enum DiffType {
     Add,
@@ -27,3 +27,13 @@ pub fn diff(path1: &String, path2: &String) -> String {
     String::from_utf8(output.stdout).unwrap()
 }
 
+pub fn normalize_path(path: &str) -> String {
+    let mut normalized_path = path.replace('/', "\\"); // Replace all '/' with '\\'
+
+    // Ensure the path starts with '.\'
+    if !normalized_path.starts_with(".\\") {
+        normalized_path = format!(".\\{}", normalized_path);
+    }
+
+    normalized_path
+}

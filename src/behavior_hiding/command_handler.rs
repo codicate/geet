@@ -5,7 +5,7 @@ use crate::{
         ref_log::Hash,
     },
     repo_hiding::{
-        data_type::{CommitMetadata, RefType, Commit},
+        data_type::{Commit, CommitMetadata, RefType},
         operation::{
             branch::{
                 checkout_commit,
@@ -15,13 +15,14 @@ use crate::{
             repo::{clone_repo, init_repo, pull_repo, push_repo},
             revision::create_revision,
         },
+        utility::normalize_path,
     },
     BASE_DIR, OBJECTS_DIR,
 };
 use chrono::Utc;
 use colored::Colorize;
-use std::process::Command;
 use std::fs;
+use std::process::Command;
 
 pub fn init() -> Result<(), String> {
     init_repo(&"default".to_string(), &"main".to_string())?;
@@ -49,13 +50,15 @@ pub fn push(remote_path: &String) -> Result<(), String> {
 }
 
 pub fn add(file_path: &str) -> Result<(), String> {
-    index::add(file_path)?;
+    let file_path = normalize_path(file_path);
+    index::add(&file_path)?;
     println!("Added file {} to staging area.", file_path);
     Ok(())
 }
 
 pub fn remove(file_path: &str) -> Result<(), String> {
-    index::remove(file_path)?;
+    let file_path = normalize_path(file_path);
+    index::remove(&file_path)?;
     println!("Removed file {} from staging area.", file_path);
     Ok(())
 }
@@ -139,30 +142,31 @@ pub fn diff(hash1: &Hash, hash2: &Hash) -> Result<(), String> {
     Ok(())
 }
 
-// pub fn cat(hash: &Hash) -> Result<(), String> {
-//     let content =
-//         retrieve_object(hash).map_err(|_| "Object with given hash not found".to_string())?;
-//     println!("{}", content);
-//     Ok(())
-// }
 pub fn cat(path_or_hash: &String) -> Result<(), String> {
     // First try to read as a regular file
-    if let Ok(content) = std::fs::read_to_string(path_or_hash) {
+    let file_path = normalize_path(path_or_hash);
+    if let Ok(content) = std::fs::read_to_string(file_path) {
         println!("{}", content);
         return Ok(());
     }
 
     // If not a file, try as a hash
-    let content = retrieve_object(path_or_hash)
-        .map_err(|_| format!("Neither a valid file path nor a valid object hash: {}", path_or_hash))?;
+    let content = retrieve_object(path_or_hash).map_err(|_| {
+        format!(
+            "Neither a valid file path nor a valid object hash: {}",
+            path_or_hash
+        )
+    })?;
 
     // Try to parse as commit for better formatting
     if let Ok(commit) = serde_json::from_str::<Commit>(&content) {
-        println!("Commit: {}\nAuthor: {}\nDate: {}\nMessage: {}", 
-            path_or_hash, 
-            commit.metadata.author, 
-            commit.metadata.timestamp, 
-            commit.metadata.message);
+        println!(
+            "Commit: {}\nAuthor: {}\nDate: {}\nMessage: {}",
+            path_or_hash,
+            commit.metadata.author,
+            commit.metadata.timestamp,
+            commit.metadata.message
+        );
         return Ok(());
     }
 
