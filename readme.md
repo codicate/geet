@@ -103,5 +103,8 @@ Feel free to update this README as you add more features to Geet!
 
 # known bugs
 
-- add/remove treats path with "./" prefix as unique from the same path without it
+- ~~add/remove treats path with "./" prefix as unique from the same path without it ~~ (solved)
 - status command treats empty files the same, because empty content gets hashed to the same value
+- cat command does not support a specific file of a specific commit
+- hide the initial system commit from log??
+- geet log printing commits in seemingly random order
