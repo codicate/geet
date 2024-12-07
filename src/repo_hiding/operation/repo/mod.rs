@@ -16,6 +16,7 @@ use std::fs::{self, File};
 use std::io;
 use std::io::Write;
 use std::path::Path;
+use std::path::PathBuf;
 
 pub fn init_repo(name: &String, default_branch: &String) -> Result<(), String> {
     let path = ".";
@@ -89,11 +90,11 @@ pub fn validate_remote_repo(path: &str) -> std::io::Result<()> {
     }
 }
 
-fn copy_refs(remote_path: &str, local_path: &str) -> std::io::Result<()> {
+/*fn copy_refs(remote_path: &str, local_path: &str) -> std::io::Result<()> {
     let remote_refs_path = format!("{}/.geet/refs", remote_path);
     let local_refs_path = format!("{}/.geet/refs", local_path);
     copy_dir(&remote_refs_path, &local_refs_path)
-}
+}*/
 
 pub fn clone_repo(remote_path: &String, local_path: &String) -> Result<(), String> {
     // Validate the remote repository
@@ -114,13 +115,28 @@ pub fn clone_repo(remote_path: &String, local_path: &String) -> Result<(), Strin
     }
 
     // Copy the .geet directory
-    let remote_geet_path = format!("{}/.geet", remote_path);
-    let local_geet_path = format!("{}/.geet", local_path);
-    copy_dir(&remote_geet_path, &local_geet_path)
+
+   // let remote_geet_path = format!("{}/.geet", remote_path);
+    //let local_geet_path = format!("{}/.geet", local_path);
+
+    // Construct paths as PathBuf
+    let remote_geet_path = PathBuf::from(remote_path).join(".geet");
+    let local_geet_path = PathBuf::from(local_path).join(".geet");
+
+    // Copy the .geet directory
+    copy_dir(remote_geet_path.clone(), local_geet_path.clone())
         .map_err(|e| format!("Failed to copy .geet directory: {}", e))?;
 
     // Copy references
-    copy_refs(&remote_path, &local_path).map_err(|e| format!("Failed to copy refs: {}", e))?;
+    let remote_refs_path = PathBuf::from(remote_path).join("refs");
+    let local_refs_path = PathBuf::from(local_path).join("refs");
+
+    copy_dir(remote_refs_path, local_refs_path)
+        .map_err(|e| format!("Failed to copy refs: {}", e))?;
+    copy_dir(remote_geet_path, local_geet_path)
+        .map_err(|e| format!("Failed to copy .geet directory: {}", e))?;
+
+    //copy_refs(&remote_path, &local_path).map_err(|e| format!("Failed to copy refs: {}", e))?;
 
     // Fetch the remote HEAD hash
     let remote_head_ref = get_ref(&"HEAD".to_string())?;
@@ -138,8 +154,10 @@ pub fn clone_repo(remote_path: &String, local_path: &String) -> Result<(), Strin
 }
 
 /// Get the list of object hashes from a directory
-pub fn get_object_hashes(dir_path: &str) -> io::Result<HashSet<String>> {
+/*pub fn get_object_hashes(dir_path: &str) -> io::Result<HashSet<String>> {
     let mut hashes = HashSet::new();
+    let dir_path = PathBuf::from(dir_path);
+
     if let Ok(entries) = fs::read_dir(dir_path) {
         for entry in entries {
             let entry = entry?;
@@ -157,8 +175,11 @@ pub fn copy_new_or_updated_files(src: &str, dest: &str) -> io::Result<()> {
     let dest_hashes = get_object_hashes(dest)?;
 
     for hash in src_hashes.difference(&dest_hashes) {
-        let src_file = format!("{}/{}", src, hash);
-        let dest_file = format!("{}/{}", dest, hash);
+        let src_file = PathBuf::from(src).join(hash);
+        let dest_file = PathBuf::from(dest).join(hash);
+
+       // let src_file = format!("{}/{}", src, hash);
+        //let dest_file = format!("{}/{}", dest, hash);
 
         fs::copy(&src_file, &dest_file)?;
         println!("Copied new object: {}", hash);
@@ -225,6 +246,103 @@ pub fn push_repo(local_path: &String, remote_path: &String) -> Result<(), String
         .map_err(|e| format!("Failed to push refs: {}", e))?;
 
     /// Update remote HEAD
+    if let Some(local_head_hash) = get_head()? {
+        update_ref(&"HEAD".to_string(), local_head_hash);
+        println!("Remote HEAD updated successfully.");
+    } else {
+        return Err("Local HEAD is missing.".to_string());
+    }
+
+    println!("Repository successfully pushed to {}", remote_path);
+    Ok(())
+}*/
+/// Get the list of object hashes from a directory
+pub fn get_object_hashes<P: AsRef<Path>>(dir_path: P) -> io::Result<HashSet<String>> {
+    let mut hashes = HashSet::new();
+    let dir_path = dir_path.as_ref(); // Convert P into &Path
+
+    if let Ok(entries) = fs::read_dir(dir_path) {
+        for entry in entries {
+            let entry = entry?;
+            if entry.file_type()?.is_file() {
+                hashes.insert(entry.file_name().to_string_lossy().to_string());
+            }
+        }
+    }
+    Ok(hashes)
+}
+
+pub fn copy_new_or_updated_files(src: PathBuf, dest: PathBuf) -> io::Result<()> {
+    let src_hashes = get_object_hashes(&src)?;
+    let dest_hashes = get_object_hashes(&dest)?;
+
+    for hash in src_hashes.difference(&dest_hashes) {
+        let src_file = src.join(hash);
+        let dest_file = dest.join(hash);
+
+        fs::copy(&src_file, &dest_file)?;
+        println!("Copied new object: {}", hash);
+    }
+
+    Ok(())
+}
+
+pub fn pull_repo(remote_path: &String, local_path: &String) -> Result<(), String> {
+    // Validate the remote repository
+    validate_remote_repo(remote_path)
+        .map_err(|e| format!("Remote repository validation failed: {}", e))?;
+
+    // Fetch the current HEAD hash
+    let local_head_hash = get_head()?; // This should return Option<Hash>
+    let remote_head_ref = get_ref(&"HEAD".to_string())?; // Adjust get_ref to return Ref or Option<Ref>
+    let remote_head_hash = remote_head_ref
+        .commit_hash
+        .clone()
+        .ok_or_else(|| "Remote HEAD is missing.".to_string())?;
+
+    // Skip pull if the hashes are the same
+    if local_head_hash == Some(remote_head_hash.clone()) {
+        println!("No new changes to pull.");
+        return Ok(());
+    }
+
+    // Synchronize objects
+    let remote_objects_path = PathBuf::from(remote_path).join(".geet/objects");
+    let local_objects_path = PathBuf::from(local_path).join(".geet/objects");
+    copy_new_or_updated_files(remote_objects_path, local_objects_path)
+        .map_err(|e| format!("Failed to pull objects: {}", e))?;
+
+    // Synchronize references
+    let remote_refs_path = PathBuf::from(remote_path).join(".geet/refs");
+    let local_refs_path = PathBuf::from(local_path).join(".geet/refs");
+    copy_new_or_updated_files(remote_refs_path, local_refs_path)
+        .map_err(|e| format!("Failed to pull refs: {}", e))?;
+
+    // Update HEAD
+    update_head(&remote_head_hash);
+
+    println!("Repository successfully pulled from {}", remote_path);
+    Ok(())
+}
+
+pub fn push_repo(local_path: &String, remote_path: &String) -> Result<(), String> {
+    // Validate the remote repository
+    validate_remote_repo(remote_path)
+        .map_err(|e| format!("Remote repository validation failed: {}", e))?;
+
+    // Push only new or updated objects
+    let local_objects_path = PathBuf::from(local_path).join(".geet/objects");
+    let remote_objects_path = PathBuf::from(remote_path).join(".geet/objects");
+    copy_new_or_updated_files(local_objects_path, remote_objects_path)
+        .map_err(|e| format!("Failed to push new objects: {}", e))?;
+
+    // Push only updated references
+    let local_refs_path = PathBuf::from(local_path).join(".geet/refs");
+    let remote_refs_path = PathBuf::from(remote_path).join(".geet/refs");
+    copy_new_or_updated_files(local_refs_path, remote_refs_path)
+        .map_err(|e| format!("Failed to push refs: {}", e))?;
+
+    // Update remote HEAD
     if let Some(local_head_hash) = get_head()? {
         update_ref(&"HEAD".to_string(), local_head_hash);
         println!("Remote HEAD updated successfully.");

@@ -17,6 +17,7 @@ pub fn create_revision(metadata: CommitMetadata) -> Result<Hash, String> {
     let parent_hash = get_head()?;
     let commit = Commit::new_commit(tree_hash, parent_hash, metadata);
 
+
     // store the commit object
     let serialized = commit.serialize();
     let commit_hash = store_object(&serialized).unwrap();

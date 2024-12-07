@@ -5,7 +5,8 @@ use serde::{Deserialize, Serialize};
 use sha1::{Digest, Sha1};
 use std::fs::{self, File};
 use std::io::{self, Read, Result, Write};
-use std::path::Path;
+use std::path::{Path, PathBuf};  // Use this consolidated import
+
 
 pub fn hash_object(data: &String) -> String {
     let mut hasher = Sha1::new();
@@ -19,7 +20,10 @@ pub fn store_object(data: &String) -> Result<String> {
     let hash_string = hash_object(data);
 
     // Write data to a file named with its hash
-    let file_path = format!("{}\\{}", OBJECTS_DIR, hash_string);
+
+   // let file_path = format!("{}\\{}", OBJECTS_DIR, hash_string);
+   let file_path = PathBuf::from(OBJECTS_DIR).join(&hash_string);
+
     let mut file = File::create(&file_path)?;
     file.write_all(data.as_bytes())?;
 
@@ -34,7 +38,8 @@ pub fn retrieve_object(hash: &String) -> Result<String> {
         ));
     }
 
-    let file_path = format!("{}\\{}", OBJECTS_DIR, hash);
+    let file_path = PathBuf::from(OBJECTS_DIR).join(hash);
+    //let file_path = format!("{}\\{}", OBJECTS_DIR, hash);
 
     if !Path::new(&file_path).exists() {
         return Err(io::Error::new(io::ErrorKind::NotFound, "File not found"));
@@ -47,8 +52,10 @@ pub fn retrieve_object(hash: &String) -> Result<String> {
 }
 
 pub fn does_object_exist(hash: &String) -> bool {
-    let object_path = format!("{}\\{}", OBJECTS_DIR, hash);
-    let path = Path::new(object_path.as_str());
+    let object_path= PathBuf::from(OBJECTS_DIR).join(hash);
+   // let object_path = format!("{}\\{}", OBJECTS_DIR, hash);
+   let path = Path::new(object_path.as_os_str());
+  //  let path = Path::new(object_path.as_str());
     return path.exists();
 }
 
@@ -92,21 +99,25 @@ pub fn deserialize_metadata<T: DeserializeOwned>(data: &[u8]) -> Result<T> {
 }
 
 //
-pub fn copy_dir(src: &str, dest: &str) -> Result<()> {
-    fs::create_dir_all(dest)?;
-    for entry in fs::read_dir(src)? {
+pub fn copy_dir(src: PathBuf, dest: PathBuf) -> io::Result<()> {
+    // Ensure the destination directory exists
+    fs::create_dir_all(&dest)?;
+
+    // Iterate over the contents of the source directory
+    for entry in fs::read_dir(&src)? {
         let entry = entry?;
         let path = entry.path();
-        let dest_path = Path::new(dest).join(entry.file_name());
+        let dest_path = dest.join(entry.file_name());
 
         if path.is_dir() {
-            copy_dir(&path.to_string_lossy(), &dest_path.to_string_lossy())?;
+            // Recursively copy subdirectories
+            copy_dir(path, dest_path)?;
         } else {
-            let mut source_file = File::open(path)?;
-            let mut dest_file = File::create(&dest_path)?;
-            io::copy(&mut source_file, &mut dest_file)?;
+            // Copy files
+            fs::copy(&path, &dest_path)?;
         }
     }
+
     Ok(())
 }
 
