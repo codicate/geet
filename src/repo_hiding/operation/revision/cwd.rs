@@ -3,7 +3,7 @@ use crate::file_hiding::index;
 use crate::repo_hiding::data_type::{Hash, Tree};
 use crate::{BASE_DIR, GEET_DIR};
 use std::fs;
-use std::io::{Result, Write};
+use std::io::{self, Error, ErrorKind, Result, Write};
 use std::path::{Path, PathBuf};
 use std::collections::HashSet;
 
@@ -16,20 +16,18 @@ fn read_cwd_helper(path: &str) -> Result<Option<Hash>> {
     let mut tree = Tree::new();
     let staged_files: HashSet<PathBuf> = index::get_staged_files()
         .into_iter()
-        .map(|p| p.canonicalize().unwrap_or(p))  // Normalize paths
+        .map(|p| p.canonicalize().unwrap_or(p))
         .collect();
 
     for child in children {
         let path = child?.path();
-        let canonical_path = path.canonicalize()?;  // Normalize path
+        let canonical_path = path.canonicalize()?;
         let path_string = strip_path(&path);
 
-        // ignore the ./geet folder
         if path_string.starts_with(GEET_DIR) {
             continue;
         }
 
-        // Only process if file is staged or is a directory
         if path.is_dir() || staged_files.contains(&canonical_path) {
             let hash = if path.is_dir() {
                 read_cwd_helper(&path_string)?
@@ -53,65 +51,108 @@ fn read_cwd_helper(path: &str) -> Result<Option<Hash>> {
     }
 }
 
-// pub fn update_cwd(hash: &Hash) {
-//     delete_cwd(Path::new(BASE_DIR)).unwrap();
-//     update_cwd_helper(BASE_DIR, hash).unwrap();
-// }
 pub fn update_cwd(hash: &Hash) -> Result<()> {
-    delete_cwd(Path::new(BASE_DIR))?;
-    update_cwd_helper(BASE_DIR, hash)
-}
-
-fn update_cwd_helper(path: &str, hash: &Hash) -> Result<()> {
-    let serialized = retrieve_object(hash)?;
+    println!("Starting checkout process for hash: {}", hash);
+    
+    // First retrieve and deserialize the tree
+    let serialized = retrieve_object(hash).map_err(|e| {
+        Error::new(ErrorKind::Other, format!("Failed to retrieve tree object: {}", e))
+    })?;
+    
     let tree = Tree::deserialize(&serialized);
-
-    for node in tree.nodes {
-        let path = PathBuf::from(path).join(node.name);
-        let path_string = strip_path(&path);
-
+    println!("Retrieved tree with {} nodes", tree.nodes.len());
+    
+    // First, clean up the working directory
+    delete_cwd(Path::new(BASE_DIR))?;
+    
+    // Now process each node directly in the working directory
+    for node in &tree.nodes {
+        let target_path = PathBuf::from(BASE_DIR).join(&node.name);
+        println!("Processing node '{}' to path '{}'", node.name, target_path.display());
+        
         if node.is_dir {
-            if !path.exists() {
-                fs::create_dir_all(&path)?;
-            }
-            fs::create_dir(path)?;
-            update_cwd_helper(&path_string, &node.hash)?;
+            fs::create_dir_all(&target_path)?;
+            process_directory(&target_path, &node.hash)?;
         } else {
-            if let Some(parent) = path.parent() {
+            if let Some(parent) = target_path.parent() {
                 fs::create_dir_all(parent)?;
             }
-            if path.exists() {
-                fs::remove_file(&path)?;
+            
+            let contents = retrieve_object(&node.hash)
+                .map_err(|e| Error::new(ErrorKind::Other, 
+                    format!("Failed to retrieve file contents for {}: {}", node.name, e)))?;
+            
+            fs::write(&target_path, contents.as_bytes())?;
+            
+            // Verify the file was created successfully
+            if !target_path.exists() {
+                return Err(Error::new(
+                    ErrorKind::Other,
+                    format!("Failed to create file: {}", target_path.display())
+                ));
             }
-            let contents = retrieve_object(&node.hash)?;
-            let mut file = fs::File::create(path)?;
-            file.write_all(contents.as_bytes())?;
-            file.flush()?;
+            println!("Successfully written file: {}", target_path.display());
         }
     }
+    
+    Ok(())
+}
 
+fn process_directory(path: &Path, hash: &Hash) -> Result<()> {
+    let serialized = retrieve_object(hash).map_err(|e| {
+        Error::new(ErrorKind::Other, format!("Failed to retrieve directory contents: {}", e))
+    })?;
+    
+    let tree = Tree::deserialize(&serialized);
+    println!("Processing directory: {} with {} nodes", path.display(), tree.nodes.len());
+    
+    for node in &tree.nodes {
+        let node_path = path.join(&node.name);
+        
+        if node.is_dir {
+            fs::create_dir_all(&node_path)?;
+            process_directory(&node_path, &node.hash)?;
+        } else {
+            if let Some(parent) = node_path.parent() {
+                fs::create_dir_all(parent)?;
+            }
+            
+            let contents = retrieve_object(&node.hash)
+                .map_err(|e| Error::new(ErrorKind::Other, 
+                    format!("Failed to retrieve file contents: {}", e)))?;
+            
+            fs::write(&node_path, contents.as_bytes())?;
+            println!("Written file in directory: {}", node_path.display());
+        }
+    }
+    
     Ok(())
 }
 
 fn delete_cwd(path: &Path) -> Result<()> {
-    for child in fs::read_dir(&path)? {
-        let path = child?.path();
-
-        // ignore the ./geet folder
-        if path.starts_with(GEET_DIR) {
+    if !path.exists() {
+        return Ok(());
+    }
+    
+    for entry in fs::read_dir(path)? {
+        let entry = entry?;
+        let path = entry.path();
+        
+        // Skip .geet directory and hidden files
+        if path.starts_with(GEET_DIR) || path.file_name()
+            .and_then(|n| n.to_str())
+            .map(|n| n.starts_with("."))
+            .unwrap_or(false) {
             continue;
         }
-
+        
         if path.is_dir() {
-            delete_cwd(&path)?;
+            fs::remove_dir_all(&path)?;
         } else {
-            fs::remove_file(path)?;
+            fs::remove_file(&path)?;
         }
     }
-
-    if !path.ends_with(BASE_DIR) {
-        fs::remove_dir(path)?;
-    }
+    
     Ok(())
 }
 
