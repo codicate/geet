@@ -55,6 +55,14 @@ Check the current status of the repository (what is staged and not staged)
 geet status
 ```
 
+### Check a file's content
+
+Use cat to check a file's content
+
+```bash
+geet cat test.txt
+```
+
 ### Show File or Commit Content
 
 View the content of a file or commit details:
@@ -70,6 +78,14 @@ Switch to a previous commit using its hash:
 
 ```bash
 geet checkout a145d0486463ceb2840f5c871608f142b713736f
+```
+
+### See the different committed version of a file 
+
+Using diff to check the two different versions of a file using its hashs
+
+```
+geet diff <commit-hash> <commit-hash>
 ```
 
 ### Clean Up the Repository
